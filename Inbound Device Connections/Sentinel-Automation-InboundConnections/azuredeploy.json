@@ -119,7 +119,7 @@
                                             "resourcegroups":  "Sentinel",
                                             "resourcename":  "Sentinel",
                                             "resourcetype":  "Log Analytics Workspace",
-                                            "subscriptions":  "8a9760cc-19e2-46d1-b76f-329d9358d83f",
+                                            "subscriptions":  "xxxxxxxx",
                                             "timerange":  "Set in query",
                                             "visType":  "Html Table"
                                         }
