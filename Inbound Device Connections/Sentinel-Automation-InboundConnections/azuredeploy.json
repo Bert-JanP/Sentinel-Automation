@@ -2,9 +2,9 @@
     "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion":  "1.0.0.0",
     "metadata":  {
-        "title":  "",
-        "description":  "",
-        "prerequisites":  "",
+        "title":  "Inbound Device Connections",
+        "description":  "This automation flow collects the last 10 inbound connections to a device that has been mentioned in the incident entities. This can help to identify lateral movement to the device.",
+        "prerequisites":  "Sentinel DeviceNetworkEvents",
         "postDeployment":  [
         ],
         "prerequisitesDeployTemplateFile":  "",
@@ -18,7 +18,7 @@
             "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
         },
         "author":  {
-            "name":  ""
+            "name":  "Bert-Jan Pals"
         }
     },
     "parameters":  {
