@@ -4,6 +4,8 @@ This repository provides automation solutions for Microsoft Sentinel. The reposi
 - Perform Incident Response Steps
 - Create new detections
 
+**Presenting this material as your own is illegal and forbidden. A reference to Twitter [@BertJanCyber](https://twitter.com/BertJanCyber) or Github [@Bert-JanP](https://github.com/Bert-JanP) is much appreciated when sharing or using the content.**
+
 # How to use the automation flows?
 
 ## Automation Rule
