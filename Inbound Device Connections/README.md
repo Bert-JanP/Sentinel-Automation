@@ -4,6 +4,11 @@ This automation flow collects the last 10 inbound connections to a device that h
 ## Deploy
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Fmain%2FInbound%2520Device%2520Connections%2Fazuredeploy.json)
 
+## Configuration
+1. Configure Sentinel Connection
+2. Configure Azure Monitor Connection
+3. Configure Azure Monitor Query Location
+
 ## Logic App Overview
 ![Alt text](./Images/LogicAppOverview.png "Inbound Device Connections Overview")
 
