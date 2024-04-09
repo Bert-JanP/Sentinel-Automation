@@ -116,10 +116,10 @@
                                         "method":  "post",
                                         "path":  "/visualizeQuery",
                                         "queries":  {
-                                            "resourcegroups":  "Sentinel",
-                                            "resourcename":  "Sentinel",
+                                            "resourcegroups":  "Your Resource Group",
+                                            "resourcename":  "Your Resource Name",
                                             "resourcetype":  "Log Analytics Workspace",
-                                            "subscriptions":  "xxxxxxxx",
+                                            "subscriptions":  "Your Subscription",
                                             "timerange":  "Set in query",
                                             "visType":  "Html Table"
                                         }
