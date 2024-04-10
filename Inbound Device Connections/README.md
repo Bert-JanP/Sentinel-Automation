@@ -19,3 +19,8 @@ This automation flow collects the last 10 inbound connections to a device that h
 
 ## Requirements
 - Ingest DeviceNetworkEvents to Sentinel
+
+# Version
+| Version | Description | Date |
+| ------- | ---------- | ----- |
+| 1.0 | Initial Version | 4/9/2024 |
