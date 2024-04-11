@@ -29,7 +29,7 @@
     },
     "variables":  {
         "MicrosoftSentinelConnectionName":  "[concat('MicrosoftSentinel-', parameters('PlaybookName'))]",
-        "Azuremonitorlogs-1ConnectionName":  "[concat('Azuremonitorlogs-1-', parameters('PlaybookName'))]"
+        "AzuremonitorlogsConnectionName":  "[concat('Azuremonitorlogs-', parameters('PlaybookName'))]"
     },
     "resources":  [
         {
