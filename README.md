@@ -6,6 +6,9 @@ This repository provides automation solutions for Microsoft Sentinel. The reposi
 
 **Presenting this material as your own is illegal and forbidden. A reference to Twitter [@BertJanCyber](https://twitter.com/BertJanCyber) or Github [@Bert-JanP](https://github.com/Bert-JanP) is much appreciated when sharing or using the content.**
 
+## Related Blogs
+- [Sentinel Automation Part 1: Enriching Sentinel Incidents with KQL Results](https://kqlquery.com/posts/sentinel-automation-part1/)
+
 # How to use the automation flows?
 
 ## Automation Rule
