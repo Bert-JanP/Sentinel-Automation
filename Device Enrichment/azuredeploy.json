@@ -91,7 +91,7 @@
                                     "inputs":  {
                                         "host":  {
                                             "connection":  {
-                                                "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
                                             }
                                         },
                                         "method":  "post",
@@ -147,11 +147,6 @@
                                         "type":  "ManagedServiceIdentity"
                                     }
                                 }
-                            },
-                            "azuresentinel_1":  {
-                                "id":  "/subscriptions/8a9760cc-19e2-46d1-b76f-329d9358d83f/providers/Microsoft.Web/locations/westeurope/managedApis/azuresentinel",
-                                "connectionId":  "/subscriptions/8a9760cc-19e2-46d1-b76f-329d9358d83f/resourceGroups/Sentinel-Automation/providers/Microsoft.Web/connections/azuresentinel",
-                                "connectionName":  "azuresentinel"
                             },
                             "azuremonitorlogs":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('azuremonitorlogsConnectionName'))]",

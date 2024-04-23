@@ -24,3 +24,4 @@ This automation flow enriches the incident with device information. The informat
 | Version | Description | Date |
 | ------- | ---------- | ----- |
 | 1.0 | Initial Version | 4/11/2024 |
+| 1.1 | Removed AzureSentinel_1 Connection | 4/23/2024 |
