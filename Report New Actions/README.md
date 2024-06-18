@@ -4,9 +4,9 @@ This automation flow creates a weekly report with new Actions/Operations/ActionT
 The Logic App uses both the Defender APT API and the Azure Monitor API, depending on the configuration you have you might want to remove one of these. In case you do not run Sentinel and want to retrieve Defender For Office data you can use the Graph API to query the data.
 
 ## Deploy
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Fmain%2FDevice%2520Enrichment%2Fazuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Fmain%2FReport%2520New%2520Actions%2Fazuredeploy.json)
 
-[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Fmain%2FDevice%2520Enrichment%2Fazuredeploy.json)
+[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Fmain%2FReport%2520New%2520Actions%2Fazuredeploy.json)
 
 ## Configuration
 1. Set Reciepient Mailbox
