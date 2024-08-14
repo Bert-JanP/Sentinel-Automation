@@ -1,0 +1,388 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "",
+        "description":  "",
+        "prerequisites":  "",
+        "postDeployment":  [
+        ],
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  ""
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "CISA-Exploited-Vulnerabilities",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "MicrosoftSentinelConnectionName":  "[concat('MicrosoftSentinel-', parameters('PlaybookName'))]",
+        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]",
+        "AzuremonitorlogsConnectionName":  "[concat('Azuremonitorlogs-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "Recurrence":  {
+                            "recurrence":  {
+                                "frequency":  "Day",
+                                "interval":  1,
+                                "schedule":  {
+                                    "hours":  [
+                                        "8"
+                                    ]
+                                },
+                                "timeZone":  "W. Europe Standard Time"
+                            },
+                            "evaluatedRecurrence":  {
+                                "frequency":  "Day",
+                                "interval":  1,
+                                "schedule":  {
+                                    "hours":  [
+                                        "8"
+                                    ]
+                                },
+                                "timeZone":  "W. Europe Standard Time"
+                            },
+                            "type":  "Recurrence"
+                        }
+                    },
+                    "actions":  {
+                        "Check_if_new_vulnerability_is_found":  {
+                            "actions":  {
+                                "For_each_Vulnerability":  {
+                                    "foreach":  "@body('Collect_CISA_Known_Exploited_Vulns')?['value']",
+                                    "actions":  {
+                                        "Add_comment_to_incident_(V3)":  {
+                                            "runAfter":  {
+                                                "Create_incident":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "incidentArmId":  "@body('Create_incident')?['id']",
+                                                    "message":  "\u003cp\u003e\u003cspan style=\"font-size: 14px\"\u003e\u003cstrong\u003e\u003c/strong\u003e\u003c/span\u003e\u003cspan style=\"font-size: 14px\"\u003e\u003cstrong\u003e@{variables('HTMLDetails')}\u003c/strong\u003e\u003c/span\u003e\u003cspan style=\"font-size: 14px\"\u003e\u003cstrong\u003e\u003c/strong\u003e\u003c/span\u003e\u003cspan style=\"font-size: 12px\"\u003e\u003cbr\u003e\n\u003c/span\u003e\u003c/p\u003e"
+                                                },
+                                                "path":  "/Incidents/Comment"
+                                            }
+                                        },
+                                        "Create_Teams_Channel_Message":  {
+                                            "runAfter":  {
+                                                "Create_HTML_Template":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['office365_1']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "To":  "@variables('TeamsChannelEmail')",
+                                                    "Subject":  "New CISA Know Exploited Vulnerability: @{items('For_each_Vulnerability')?['Vendor']} - @{items('For_each_Vulnerability')?['Product']}  (@{items('For_each_Vulnerability')?['CVEid']})",
+                                                    "Body":  "\u003cp\u003e@{variables('HTMLDetails')}\u003c/p\u003e",
+                                                    "Importance":  "Normal"
+                                                },
+                                                "path":  "/v2/Mail"
+                                            }
+                                        },
+                                        "Create_incident":  {
+                                            "runAfter":  {
+                                                "Create_HTML_Template":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "put",
+                                                "body":  {
+                                                    "title":  "New CISA Know Exploited Vulnerability: @{items('For_each_Vulnerability')?['Vendor']} - @{items('For_each_Vulnerability')?['Product']}  (@{items('For_each_Vulnerability')?['CVEid']})",
+                                                    "severity":  "@variables('IncidentSeverity')",
+                                                    "status":  "New",
+                                                    "description":  "A new vulnerability is added to the CISA know vulnerability list.  The description of the vulnerability is: @{items('For_each_Vulnerability')?['Description']}(@{items('For_each_Vulnerability')?['CVEid']}).\nThe action that is required: @{items('For_each_Vulnerability')?['RequiredAction']}. This action needs to be taken in @{items('For_each_Vulnerability')?['DueDateinDays']} days.",
+                                                    "ownerAction":  "Unassign"
+                                                },
+                                                "path":  "/Incidents/subscriptions/@{encodeURIComponent('8a9760cc-19e2-46d1-b76f-329d9358d83f')}/resourceGroups/@{encodeURIComponent('Sentinel')}/workspaces/@{encodeURIComponent('Sentinel')}"
+                                            }
+                                        },
+                                        "Send_an_email_(V2)":  {
+                                            "runAfter":  {
+                                                "Create_HTML_Template":  [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['office365_1']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "body":  {
+                                                    "To":  "@variables('SenderToAddress')",
+                                                    "Subject":  "New CISA Know Exploited Vulnerability: @{items('For_each_Vulnerability')?['Vendor']} - @{items('For_each_Vulnerability')?['Product']}  (@{items('For_each_Vulnerability')?['CVEid']})",
+                                                    "Body":  "\u003cp\u003e@{variables('HTMLDetails')}\u003c/p\u003e",
+                                                    "Importance":  "Normal"
+                                                },
+                                                "path":  "/v2/Mail"
+                                            }
+                                        },
+                                        "Create_HTML_Template":  {
+                                            "type":  "SetVariable",
+                                            "inputs":  {
+                                                "name":  "HTMLDetails",
+                                                "value":  "\u003ch2\u003e\u003cb\u003eCISA Know Exploited Vulnerability - @{items('For_each_Vulnerability')?['CVEid']} details\u003c/b\u003e\u003c/h2\u003e\n\u003ctable\u003e\n \u003ctr\u003e\n   \u003cth\u003eVendor\u003c/th\u003e\n   \u003cth\u003e@{items('For_each_Vulnerability')?['Vendor']}\u003c/th\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eProduct\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['Product']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eDescription\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['Description']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eAddition Date\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['DateAdded']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eReqruired Action\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['RequiredAction']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eDue Date in Days\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['DueDateinDays']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eNotes\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['Notes']}\u003c/td\u003e\n \u003c/tr\u003e\n\u003c/table\u003e"
+                                            }
+                                        }
+                                    },
+                                    "type":  "Foreach"
+                                }
+                            },
+                            "runAfter":  {
+                                "Collect_CISA_Known_Exploited_Vulns":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "else":  {
+                                "actions":  {
+                                }
+                            },
+                            "expression":  {
+                                "and":  [
+                                    {
+                                        "equals":  [
+                                            "@empty(body('Collect_CISA_Known_Exploited_Vulns'))",
+                                            false
+                                        ]
+                                    }
+                                ]
+                            },
+                            "type":  "If"
+                        },
+                        "Initialize_HTMLDetails":  {
+                            "runAfter":  {
+                                "Initialize_SentinelIncidentSeverity":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "HTMLDetails",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_SenderToAddress":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SenderToAddress",
+                                        "type":  "string",
+                                        "value":  "test@test.com"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_SentinelIncidentSeverity":  {
+                            "runAfter":  {
+                                "Initialize_SenderToAddress":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "IncidentSeverity",
+                                        "type":  "string",
+                                        "value":  "Medium"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_TeamsChannelEmail":  {
+                            "runAfter":  {
+                                "Initialize_HTMLDetails":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "TeamsChannelEmail",
+                                        "type":  "string",
+                                        "value":  "yourteamschannel@emea.teams.ms"
+                                    }
+                                ]
+                            }
+                        },
+                        "Collect_CISA_Known_Exploited_Vulns":  {
+                            "runAfter":  {
+                                "Initialize_TeamsChannelEmail":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['azuremonitorlogs']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  "let KnowExploitedVulnsCISA = externaldata(CVEid: string, Vendor: string, Product: string, vulnerabilityName: string, DateAdded: datetime, Description: string, RequiredAction: string, dueDate: datetime, Notes: string)[@\"https://www.cisa.gov/sites/default/files/csv/known_exploited_vulnerabilities.csv\"] with (format=\"csv\", ignoreFirstRecord=True);\nKnowExploitedVulnsCISA\n| where DateAdded \u003e startofday(now() - 1d)\n| extend DueDateinDays = datetime_diff('day', now(), dueDate) \n| project DateAdded, CVEid, Vendor, Product, Description, RequiredAction, Notes, DueDateinDays",
+                                "path":  "/queryData",
+                                "queries":  {
+                                    "subscriptions":  "8a9760cc-19e2-46d1-b76f-329d9358d83f",
+                                    "resourcegroups":  "Sentinel",
+                                    "resourcetype":  "Log Analytics Workspace",
+                                    "resourcename":  "Sentinel",
+                                    "timerange":  "Last 3 days"
+                                }
+                            }
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "azuresentinel_1":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
+                                "connectionName":  "[variables('MicrosoftSentinelConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]",
+                                "connectionProperties":  {
+                                    "authentication":  {
+                                        "type":  "ManagedServiceIdentity"
+                                    }
+                                }
+                            },
+                            "office365_1":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName":  "[variables('Office365ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                            },
+                            "azuremonitorlogs":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('AzuremonitorlogsConnectionName'))]",
+                                "connectionName":  "[variables('AzuremonitorlogsConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs')]"
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "CISA-Exploited-Vulnerabilities",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('AzuremonitorlogsConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('MicrosoftSentinelConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('MicrosoftSentinelConnectionName')]",
+                "customParameterValues":  {
+                },
+                "parameterValueType":  "Alternative",
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Office365ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Office365ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('AzuremonitorlogsConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('AzuremonitorlogsConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs')]"
+                }
+            }
+        }
+    ]
+}
