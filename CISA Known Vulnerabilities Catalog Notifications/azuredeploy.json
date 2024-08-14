@@ -143,7 +143,7 @@
                                                     "description":  "A new vulnerability is added to the CISA know vulnerability list.  The description of the vulnerability is: @{items('For_each_Vulnerability')?['Description']}(@{items('For_each_Vulnerability')?['CVEid']}).\nThe action that is required: @{items('For_each_Vulnerability')?['RequiredAction']}. This action needs to be taken in @{items('For_each_Vulnerability')?['DueDateinDays']} days.",
                                                     "ownerAction":  "Unassign"
                                                 },
-                                                "path":  "/Incidents/subscriptions/@{encodeURIComponent(subscription().subscriptionId)}/resourceGroups/@{encodeURIComponent('Sentinel')}/workspaces/@{encodeURIComponent('Sentinel')}"
+                                                "path":"[concat('/Incidents/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/workspaces/',parameters('WorkspaceName'))]"
                                             }
                                         },
                                         "Send_an_email_(V2)":  {

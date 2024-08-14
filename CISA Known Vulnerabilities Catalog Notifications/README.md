@@ -34,3 +34,4 @@ This automation flow creates email, Teams and Sentinel notifications based on ne
 | Version | Description | Date |
 | ------- | ---------- | ----- |
 | 1.0 | Initial Version | 14/8/2024 |
+| 1.1 | Change AzureDeploy variables | 14/8/2024 |
