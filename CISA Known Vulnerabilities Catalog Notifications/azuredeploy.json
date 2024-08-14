@@ -23,7 +23,7 @@
     },
     "parameters":  {
         "PlaybookName":  {
-            "defaultValue":  "CISA-Exploited-Vulnerabilities",
+            "defaultValue":  "CISA-Exploited-Vulnerabilities-Notifications",
             "type":  "string"
         }
     },
