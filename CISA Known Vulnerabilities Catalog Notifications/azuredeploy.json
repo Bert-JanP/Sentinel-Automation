@@ -143,7 +143,7 @@
                                                     "description":  "A new vulnerability is added to the CISA know vulnerability list.  The description of the vulnerability is: @{items('For_each_Vulnerability')?['Description']}(@{items('For_each_Vulnerability')?['CVEid']}).\nThe action that is required: @{items('For_each_Vulnerability')?['RequiredAction']}. This action needs to be taken in @{items('For_each_Vulnerability')?['DueDateinDays']} days.",
                                                     "ownerAction":  "Unassign"
                                                 },
-                                                "path":  "/Incidents/subscriptions/@{encodeURIComponent('8a9760cc-19e2-46d1-b76f-329d9358d83f')}/resourceGroups/@{encodeURIComponent('Sentinel')}/workspaces/@{encodeURIComponent('Sentinel')}"
+                                                "path":  "/Incidents/subscriptions/@{encodeURIComponent(subscription().subscriptionId)}/resourceGroups/@{encodeURIComponent('Sentinel')}/workspaces/@{encodeURIComponent('Sentinel')}"
                                             }
                                         },
                                         "Send_an_email_(V2)":  {
@@ -173,7 +173,7 @@
                                             "type":  "SetVariable",
                                             "inputs":  {
                                                 "name":  "HTMLDetails",
-                                                "value":  "\u003ch2\u003e\u003cb\u003eCISA Know Exploited Vulnerability - @{items('For_each_Vulnerability')?['CVEid']} details\u003c/b\u003e\u003c/h2\u003e\n\u003ctable\u003e\n \u003ctr\u003e\n   \u003cth\u003eVendor\u003c/th\u003e\n   \u003cth\u003e@{items('For_each_Vulnerability')?['Vendor']}\u003c/th\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eProduct\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['Product']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eDescription\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['Description']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eAddition Date\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['DateAdded']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eReqruired Action\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['RequiredAction']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eDue Date in Days\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['DueDateinDays']}\u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n   \u003ctd\u003eNotes\u003c/td\u003e\n   \u003ctd\u003e@{items('For_each_Vulnerability')?['Notes']}\u003c/td\u003e\n \u003c/tr\u003e\n\u003c/table\u003e"
+                                                "value":  "\u003ch2\u003e\u003cb\u003eCISA Know Exploited Vulnerability - @{items('For_each_Vulnerability')?['CVEid']} details\u003c/b\u003e\u003c/h2\u003e\n\u003ctable\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003cth\u003eVendor\u003c/th\u003e\nï¿½ï¿½ï¿½\u003cth\u003e@{items('For_each_Vulnerability')?['Vendor']}\u003c/th\u003e\nï¿½\u003c/tr\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003ctd\u003eProduct\u003c/td\u003e\nï¿½ï¿½ï¿½\u003ctd\u003e@{items('For_each_Vulnerability')?['Product']}\u003c/td\u003e\nï¿½\u003c/tr\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003ctd\u003eDescription\u003c/td\u003e\nï¿½ï¿½ï¿½\u003ctd\u003e@{items('For_each_Vulnerability')?['Description']}\u003c/td\u003e\nï¿½\u003c/tr\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003ctd\u003eAddition Date\u003c/td\u003e\nï¿½ï¿½ï¿½\u003ctd\u003e@{items('For_each_Vulnerability')?['DateAdded']}\u003c/td\u003e\nï¿½\u003c/tr\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003ctd\u003eReqruired Action\u003c/td\u003e\nï¿½ï¿½ï¿½\u003ctd\u003e@{items('For_each_Vulnerability')?['RequiredAction']}\u003c/td\u003e\nï¿½\u003c/tr\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003ctd\u003eDue Date in Days\u003c/td\u003e\nï¿½ï¿½ï¿½\u003ctd\u003e@{items('For_each_Vulnerability')?['DueDateinDays']}\u003c/td\u003e\nï¿½\u003c/tr\u003e\nï¿½\u003ctr\u003e\nï¿½ï¿½ï¿½\u003ctd\u003eNotes\u003c/td\u003e\nï¿½ï¿½ï¿½\u003ctd\u003e@{items('For_each_Vulnerability')?['Notes']}\u003c/td\u003e\nï¿½\u003c/tr\u003e\n\u003c/table\u003e"
                                             }
                                         }
                                     },
@@ -282,10 +282,10 @@
                                 "body":  "let KnowExploitedVulnsCISA = externaldata(CVEid: string, Vendor: string, Product: string, vulnerabilityName: string, DateAdded: datetime, Description: string, RequiredAction: string, dueDate: datetime, Notes: string)[@\"https://www.cisa.gov/sites/default/files/csv/known_exploited_vulnerabilities.csv\"] with (format=\"csv\", ignoreFirstRecord=True);\nKnowExploitedVulnsCISA\n| where DateAdded \u003e startofday(now() - 1d)\n| extend DueDateinDays = datetime_diff('day', now(), dueDate) \n| project DateAdded, CVEid, Vendor, Product, Description, RequiredAction, Notes, DueDateinDays",
                                 "path":  "/queryData",
                                 "queries":  {
-                                    "subscriptions":  "8a9760cc-19e2-46d1-b76f-329d9358d83f",
-                                    "resourcegroups":  "Sentinel",
+                                    "subscriptions":  "YourSubscription",
+                                    "resourcegroups":  "ResourceGroup",
                                     "resourcetype":  "Log Analytics Workspace",
-                                    "resourcename":  "Sentinel",
+                                    "resourcename":  "SentinelResource",
                                     "timerange":  "Last 3 days"
                                 }
                             }
