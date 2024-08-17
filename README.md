@@ -8,6 +8,7 @@ This repository provides automation solutions for Microsoft Sentinel. The reposi
 
 ## Related Blogs
 - [Sentinel Automation Part 1: Enriching Sentinel Incidents with KQL Results](https://kqlquery.com/posts/sentinel-automation-part1/)
+- [Sentinel Automation Part 2: Automate CISA Known Exploited Vulnerability Notifications](https://kqlquery.com/posts/automatic-cisa-vulnerability-notifications/)
 
 # How to use the automation flows?
 
