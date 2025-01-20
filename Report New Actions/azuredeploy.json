@@ -94,7 +94,7 @@
                             "type":  "ApiConnection",
                             "inputs":  {
                                 "body":  {
-                                    "Query":  "let TimeFrame = 180d;\nlet Schedule = 7d;\nlet KnownActions = union DeviceEvents, DeviceFileEvents, DeviceFileCertificateInfo, DeviceInfo, DeviceLogonEvents, DeviceNetworkEvents, DeviceProcessEvents, DeviceRegistryEvents\n| where TimeGenerated between (startofday(ago(TimeFrame)) .. startofday(ago(Schedule))) \n| where isnotempty(ActionType)\n| distinct ActionType;\nunion DeviceEvents, DeviceFileEvents, DeviceFileCertificateInfo, DeviceInfo, DeviceLogonEvents, DeviceNetworkEvents, DeviceProcessEvents, DeviceRegistryEvents\n| where TimeGenerated \u003e startofday(ago(Schedule)) \n| where isnotempty(ActionType) and ActionType !in (KnownActions)\n| distinct Type, ActionType\n| project-rename DataType = Type\n| sort by DataType, ActionType"
+                                    "Query":  "let TimeFrame = 180d;\nlet Schedule = 7d;\nlet KnownActions = union Device*\n| where TimeGenerated between (startofday(ago(TimeFrame)) .. startofday(ago(Schedule))) \n| where isnotempty(ActionType)\n| distinct ActionType;\nunion Device*\n| where TimeGenerated \u003e startofday(ago(Schedule)) \n| where isnotempty(ActionType) and ActionType !in (KnownActions)\n| distinct Type, ActionType\n| project-rename DataType = Type\n| sort by DataType, ActionType"
                                 },
                                 "host":  {
                                     "connection":  {
@@ -139,7 +139,7 @@
                             },
                             "type":  "ApiConnection",
                             "inputs":  {
-                                "body":  "let TimeFrame = 180d;\nlet Schedule = 7d;\nlet KnownActions = union *\n| where TimeGenerated between (startofday(ago(TimeFrame)) .. startofday(ago(Schedule))) \n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\n| where isnotempty(Action)\n| distinct Action;\nunion *\n| where TimeGenerated \u003e startofday(ago(Schedule)) \n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\n| where isnotempty(Action) and Action !in (KnownActions)\n| distinct Type, Action\n| project-rename DataType = Type\n| sort by DataType, Action",
+                                "body":  "let TimeFrame = 180d;\nlet Schedule = 7d;\nlet KnownActions = union *\n| where TimeGenerated between (startofday(ago(TimeFrame)) .. startofday(ago(Schedule))) \n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType, tostring(EventID))\n| where isnotempty(Action)\n| distinct Action;\nunion *\n| where TimeGenerated \u003e startofday(ago(Schedule)) \n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType, tostring(EventID))\n| where isnotempty(Action) and Action !in (KnownActions)\n| distinct Type, Action\n| project-rename DataType = Type\n| sort by DataType, Action",
                                 "host":  {
                                     "connection":  {
                                         "name":  "@parameters('$connections')['azuremonitorlogs']['connectionId']"
