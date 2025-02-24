@@ -18,7 +18,7 @@
             "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
         },
         "author":  {
-            "name":  ""
+            "name":  "Bert-Jan Pals"
         }
     },
     "parameters":  {
