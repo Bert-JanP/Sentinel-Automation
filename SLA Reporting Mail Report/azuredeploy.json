@@ -28,7 +28,7 @@
         }
     },
     "variables":  {
-        "Azuremonitorlogs-ConnectionName":  "[concat('Azuremonitorlogs--', parameters('PlaybookName'))]",
+        "Azuremonitorlogs-ConnectionName":  "[concat('Azuremonitorlogs-', parameters('PlaybookName'))]",
         "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]"
     },
     "resources":  [
