@@ -1,7 +1,8 @@
 # Sentinel Automation
-This repository provides automation solutions for Microsoft Sentinel. The repository is focused on Logic Apps/Playbooks. The solutions are aimed to:
+This repository provides automation solutions for Microsoft Sentinel. The repository is focused on sharing Logic Apps/Playbooks and Workbooks. The solutions are aimed to:
 - Enrich Incidents
 - Perform Incident Response Steps
+- Automate SOC activities
 - Create new detections
 
 **Presenting this material as your own is illegal and forbidden. A reference to Twitter [@BertJanCyber](https://twitter.com/BertJanCyber) or Github [@Bert-JanP](https://github.com/Bert-JanP) is much appreciated when sharing or using the content.**
@@ -9,6 +10,7 @@ This repository provides automation solutions for Microsoft Sentinel. The reposi
 ## Related Blogs
 - [Sentinel Automation Part 1: Enriching Sentinel Incidents with KQL Results](https://kqlquery.com/posts/sentinel-automation-part1/)
 - [Sentinel Automation Part 2: Automate CISA Known Exploited Vulnerability Notifications](https://kqlquery.com/posts/automatic-cisa-vulnerability-notifications/)
+- [Monitor For New Actions In Sentinel And MDE](https://kqlquery.com/posts/monitor-new-actions/)
 
 # How to use the automation flows?
 
