@@ -1,0 +1,364 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "",
+        "description":  "",
+        "prerequisites":  "",
+        "postDeployment":  [
+        ],
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  "Bert-Jan Pals"
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "Sentinel-SLA-Response-Report",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "Azuremonitorlogs-1ConnectionName":  "[concat('Azuremonitorlogs-1-', parameters('PlaybookName'))]",
+        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "Recurrence":  {
+                            "recurrence":  {
+                                "interval":  1,
+                                "frequency":  "Day",
+                                "timeZone":  "UTC",
+                                "schedule":  {
+                                    "hours":  [
+                                        1
+                                    ]
+                                }
+                            },
+                            "evaluatedRecurrence":  {
+                                "interval":  1,
+                                "frequency":  "Day",
+                                "timeZone":  "UTC",
+                                "schedule":  {
+                                    "hours":  [
+                                        1
+                                    ]
+                                }
+                            },
+                            "type":  "Recurrence"
+                        }
+                    },
+                    "actions":  {
+                        "HTML_Table_Failed_SLA":  {
+                            "runAfter":  {
+                                "Initialize_Date":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['azuremonitorlogs-1']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  "// Prepare Data (Additonal Context)\nlet SLA_Variables = datatable (Severity: string, TimeToRespond: int, TimeToContainmentMinutes: int, UpdateIntervalMinutes: int)\n[\n    \"High\", 60, 1440, 60,\n    \"Medium\", 120, 2880, 120,\n    \"Low\", 240, 4320, 240,\n    \"Informational\", 480, 10080, 480\n];\nlet StartTime = startofday(ago(10d));\nlet EndTime = endofday(ago(1d));\n// Collect Data\nSecurityIncident\n| where CreatedTime between (StartTime ..  EndTime)\n| where Status == \"Closed\"\n// Prepare Data (Parsing)\n| extend AssignedAnalyst = Owner.userPrincipalName\n// Prepare Data (Standardize)\n| extend StandardizedAssignedAnalyst = tolower(Owner.userPrincipalName)\n// Prepare Data (Aggregation \u0026 Statistics)\n| summarize arg_max(TimeGenerated, *) by IncidentNumber\n// Prepare Data (Additonal Context)\n| join kind=inner SLA_Variables on Severity\n| extend TimeToRespondToIncident = datetime_diff('minute', FirstModifiedTime, CreatedTime)\n| extend MetSLA = TimeToRespondToIncident \u003c= TimeToRespond\n| where MetSLA == \"false\"\n// Present Data\n| project IncidentNumber, Title, Severity, Analyst = StandardizedAssignedAnalyst, TimeToRespondToIncident, MetSLA\n| sort by Severity",
+                                "path":  "/visualizeQuery",
+                                "queries":  {
+                                    "subscriptions":  "@variables('SubscriptionId')",
+                                    "resourcegroups":  "@variables('ResourceGroupName')",
+                                    "resourcetype":  "Log Analytics Workspace",
+                                    "resourcename":  "@variables('SentinelResourceName')",
+                                    "timerange":  "Set in query",
+                                    "visType":  "Html Table"
+                                }
+                            }
+                        },
+                        "Initialize_Subscription":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SubscriptionId",
+                                        "type":  "string",
+                                        "value":  "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Resource_Group":  {
+                            "runAfter":  {
+                                "Initialize_Subscription":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ResourceGroupName",
+                                        "type":  "string",
+                                        "value":  "ResourceGroup"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Sentinel_Instance":  {
+                            "runAfter":  {
+                                "Initialize_Resource_Group":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SentinelResourceName",
+                                        "type":  "string",
+                                        "value":  "Sentinel"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Report_Recipient":  {
+                            "runAfter":  {
+                                "Initialize_Sentinel_Instance":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Recipients",
+                                        "type":  "string",
+                                        "value":  "test@kqlquery.com"
+                                    }
+                                ]
+                            }
+                        },
+                        "PieChart_Statistics":  {
+                            "runAfter":  {
+                                "HTML_Table_Failed_SLA":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['azuremonitorlogs-1']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  "// Prepare Data (Additonal Context)\nlet SLA_Variables = datatable (Severity: string, TimeToRespond: int, TimeToContainmentMinutes: int, UpdateIntervalMinutes: int)\n[\n    \"High\", 60, 1440, 60,\n    \"Medium\", 120, 2880, 120,\n    \"Low\", 240, 4320, 240,\n    \"Informational\", 480, 10080, 480\n];\nlet StartTime = startofday(ago(10d));\nlet EndTime = endofday(ago(1d));\n// Collect Data\nSecurityIncident\n| where CreatedTime between (StartTime ..  EndTime)\n| where Status == \"Closed\"\n// Prepare Data (Parsing)\n| extend AssignedAnalyst = Owner.userPrincipalName\n// Prepare Data (Standardize)\n| extend StandardizedAssignedAnalyst = tolower(Owner.userPrincipalName)\n// Prepare Data (Aggregation \u0026 Statistics)\n| summarize arg_max(TimeGenerated, *) by IncidentNumber\n// Prepare Data (Additonal Context)\n| join kind=inner SLA_Variables on Severity\n| extend TimeToRespondToIncident = datetime_diff('minute', FirstModifiedTime, CreatedTime)\n| extend MetSLA = TimeToRespondToIncident \u003c= TimeToRespond\n| where isnotempty(MetSLA)\n// Present Data\n| project IncidentNumber, Title, Severity, StandardizedAssignedAnalyst, TimeToRespondToIncident, MetSLA\n| summarize Total = count() by tostring(MetSLA)",
+                                "path":  "/visualizeQuery",
+                                "queries":  {
+                                    "subscriptions":  "@variables('SubscriptionId')",
+                                    "resourcegroups":  "@variables('ResourceGroupName')",
+                                    "resourcetype":  "Log Analytics Workspace",
+                                    "resourcename":  "@variables('SentinelResourceName')",
+                                    "timerange":  "Set in query",
+                                    "visType":  "Pie Chart"
+                                }
+                            }
+                        },
+                        "HTML_Template":  {
+                            "runAfter":  {
+                                "Create_CSV_Attachment":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "HTMLTemplate",
+                                        "type":  "string",
+                                        "value":  "\u003c!DOCTYPE html\u003e\n\u003chtml lang=\"en\"\u003e\n\u003chead\u003e\n    \u003cmeta charset=\"UTF-8\"\u003e\n    \u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"\u003e\n    \u003ctitle\u003eSLA Time to Respond Report\u003c/title\u003e\n    \u003cstyle\u003e\n        body {\n            font-family: Arial, sans-serif;\n            margin: 20px;\n        }\n        table {\n            width: 100%;\n            border-collapse: collapse;\n        }\n        th, td {\n            border: 1px solid #ddd;\n            padding: 8px;\n            text-align: left;\n        }\n        th {\n            background-color: #f2f2f2;\n        }\n        tr:nth-child(even) {\n            background-color: #f9f9f9;\n        }\n        .header {\n            text-align: center;\n            margin-bottom: 20px;\n        }\n        .chart {\n            text-align: center;\n            margin: 20px 0;\n        }\n        .trademark {\n            text-align: center;\n            margin-top: 20px;\n            font-size: 0.9em;\n            color: #555;\n        }\n    \u003c/style\u003e\n\u003c/head\u003e\n\u003cbody\u003e\n    \u003cdiv class=\"header\"\u003e\n        \u003ch1\u003eSLA Time to Respond Report\u003c/h1\u003e\n        \u003cp\u003eSentinel Incidents\u003c/p\u003e\n    \u003c/div\u003e\n    \u003cdiv class=\"chart\"\u003e\n        \u003ch2\u003eSLA overview, all incidents  @{variables('Date')}\u003c/h2\u003e\n        \u003cimg src=\"cid:@{body('PieChart_Statistics')?['attachmentName']}\"/\u003e\n    \u003c/div\u003e\n    \u003ch2\u003eDefined SLA Levels\u003c/h2\u003e\n    \u003ctable\u003e\n        \u003cthead\u003e\n            \u003ctr\u003e\n                \u003cth\u003eSeverity\u003c/th\u003e\n                \u003cth\u003eTime to Respond (minutes)\u003c/th\u003e\n                \u003cth\u003eTime to Containment (minutes)\u003c/th\u003e\n                \u003cth\u003eUpdate Interval (minutes)\u003c/th\u003e\n            \u003c/tr\u003e\n        \u003c/thead\u003e\n        \u003ctbody\u003e\n            \u003ctr\u003e\n                \u003ctd\u003eHigh\u003c/td\u003e\n                \u003ctd\u003e60\u003c/td\u003e\n                \u003ctd\u003e1440\u003c/td\u003e\n                \u003ctd\u003e60\u003c/td\u003e\n            \u003c/tr\u003e\n            \u003ctr\u003e\n                \u003ctd\u003eMedium\u003c/td\u003e\n                \u003ctd\u003e120\u003c/td\u003e\n                \u003ctd\u003e2880\u003c/td\u003e\n                \u003ctd\u003e120\u003c/td\u003e\n            \u003c/tr\u003e\n            \u003ctr\u003e\n                \u003ctd\u003eLow\u003c/td\u003e\n                \u003ctd\u003e240\u003c/td\u003e\n                \u003ctd\u003e4320\u003c/td\u003e\n                \u003ctd\u003e240\u003c/td\u003e\n            \u003c/tr\u003e\n            \u003ctr\u003e\n                \u003ctd\u003eInformational\u003c/td\u003e\n                \u003ctd\u003e480\u003c/td\u003e\n                \u003ctd\u003e10080\u003c/td\u003e\n                \u003ctd\u003e480\u003c/td\u003e\n            \u003c/tr\u003e\n        \u003c/tbody\u003e\n    \u003c/table\u003e\n    \u003ch2\u003eFailed SLA Incidents\u003c/h2\u003e\n    @{base64ToString(body('HTML_Table_Failed_SLA')?['attachmentContent'])}\n    \u003cp\u003eFor a detailed list of all incidents, please refer to the attached CSV file.\u003c/p\u003e\n    \u003cdiv class=\"trademark\"\u003e\n        \u003cp\u003e\u0026copy; 2025 Bert-Jan Pals\u003c/p\u003e\n    \u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Date":  {
+                            "runAfter":  {
+                                "Initialize_Report_Recipient":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Date",
+                                        "type":  "string",
+                                        "value":  "@formatDateTime(addDays(utcnow(),-1), 'dddd MMMM d')"
+                                    }
+                                ]
+                            }
+                        },
+                        "List_all_closed_incidents":  {
+                            "runAfter":  {
+                                "PieChart_Statistics":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['azuremonitorlogs-1']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  "// Prepare Data (Additonal Context)\nlet SLA_Variables = datatable (Severity: string, TimeToRespond: int, TimeToContainmentMinutes: int, UpdateIntervalMinutes: int)\n[\n    \"High\", 60, 1440, 60,\n    \"Medium\", 120, 2880, 120,\n    \"Low\", 240, 4320, 240,\n    \"Informational\", 480, 10080, 480\n];\nlet StartTime = startofday(ago(10d));\nlet EndTime = endofday(ago(1d));\n// Collect Data\nSecurityIncident\n| where CreatedTime between (StartTime ..  EndTime)\n| where Status == \"Closed\"\n// Prepare Data (Parsing)\n| extend AssignedAnalyst = Owner.userPrincipalName\n// Prepare Data (Standardize)\n| extend StandardizedAssignedAnalyst = tolower(Owner.userPrincipalName)\n// Prepare Data (Aggregation \u0026 Statistics)\n| summarize arg_max(TimeGenerated, *) by IncidentNumber\n// Prepare Data (Additonal Context)\n| join kind=inner SLA_Variables on Severity\n| extend TimeToRespondToIncident = datetime_diff('minute', FirstModifiedTime, CreatedTime)\n| extend MetSLA = TimeToRespondToIncident \u003c= TimeToRespond\n| where isnotempty(MetSLA)\n// Present Data\n| project CreatedTime, IncidentNumber, Title, Severity, Analyst = StandardizedAssignedAnalyst, TimeToRespondToIncident, MetSLA\n| sort by CreatedTime",
+                                "path":  "/queryData",
+                                "queries":  {
+                                    "subscriptions":  "@variables('SubscriptionId')",
+                                    "resourcegroups":  "@variables('ResourceGroupName')",
+                                    "resourcetype":  "Log Analytics Workspace",
+                                    "resourcename":  "@variables('ResourceGroupName')",
+                                    "timerange":  "Set in query"
+                                }
+                            }
+                        },
+                        "Create_CSV_Attachment":  {
+                            "runAfter":  {
+                                "List_all_closed_incidents":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Table",
+                            "inputs":  {
+                                "from":  "@body('List_all_closed_incidents')?['value']",
+                                "format":  "CSV"
+                            }
+                        },
+                        "Send_Report":  {
+                            "runAfter":  {
+                                "HTML_Template":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['office365']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  {
+                                    "To":  "@variables('Recipients')",
+                                    "Subject":  "Sentinel SLA Response Report - @{variables('Date')}",
+                                    "Body":  "\u003cp class=\"editor-paragraph\"\u003e@{variables('HTMLTemplate')}\u003c/p\u003e",
+                                    "Attachments":  [
+                                        {
+                                            "Name":  "@body('PieChart_Statistics')?['attachmentName']",
+                                            "ContentBytes":  "@body('PieChart_Statistics')?['attachmentContent']"
+                                        },
+                                        {
+                                            "Name":  "SLA-Report.csv",
+                                            "ContentBytes":  "@base64(body('Create_CSV_Attachment'))"
+                                        }
+                                    ],
+                                    "Importance":  "Normal"
+                                },
+                                "path":  "/v2/Mail"
+                            }
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "azuremonitorlogs-1":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Azuremonitorlogs-1ConnectionName'))]",
+                                "connectionName":  "[variables('Azuremonitorlogs-1ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs-1')]"
+                            },
+                            "office365":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName":  "[variables('Office365ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "Sentinel-SLA-Response-Report",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('Azuremonitorlogs-1ConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Azuremonitorlogs-1ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Azuremonitorlogs-1ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs-1')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Office365ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Office365ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                }
+            }
+        }
+    ]
+}
