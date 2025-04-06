@@ -19,8 +19,11 @@ CISA KEV: [Link](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
 4. Configure Exchange Online Connection
 
 ## Logic App Overview
-![Alt text](./Images/LogicAppOverview1.png)
-![Alt text](./Images/LogicAppOverview2.png)
+![Alt text](./Images/LogicApp1.png)
+
+![Alt text](./Images/LogicApp2.png)
+
+![Alt text](./Images/LogicApp3.png)
 
 ## Results
 
@@ -34,3 +37,4 @@ Demo video: [Video](./Images/CISAKEV.mp4)
 | Version | Description | Date |
 | ------- | ---------- | ----- |
 | 1.0 | Initial Version | 03/3/2025 |
+| 1.1 | ReadMe Logic App overview addition | 06/4/2025 |
