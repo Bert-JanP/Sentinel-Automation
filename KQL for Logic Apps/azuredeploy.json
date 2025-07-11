@@ -1,0 +1,390 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "KQL for Logic Apps",
+        "description":  "Logic App to show the KQL capabilities of the Graph API, Azure Monitor API and Defender API.",
+        "prerequisites":  "",
+        "postDeployment":  [
+        ],
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  "Bert-Jan Pals"
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "KQL-API-Comparison",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "Azuremonitorlogs-1ConnectionName":  "[concat('Azuremonitorlogs-1-', parameters('PlaybookName'))]",
+        "WdatpConnectionName":  "[concat('Wdatp-', parameters('PlaybookName'))]",
+        "KeyvaultConnectionName":  "[concat('Keyvault-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "Recurrence":  {
+                            "recurrence":  {
+                                "interval":  1,
+                                "frequency":  "Day",
+                                "timeZone":  "W. Europe Standard Time",
+                                "schedule":  {
+                                    "hours":  [
+                                        "18"
+                                    ],
+                                    "minutes":  [
+                                        15
+                                    ]
+                                }
+                            },
+                            "evaluatedRecurrence":  {
+                                "interval":  1,
+                                "frequency":  "Day",
+                                "timeZone":  "W. Europe Standard Time",
+                                "schedule":  {
+                                    "hours":  [
+                                        "18"
+                                    ],
+                                    "minutes":  [
+                                        15
+                                    ]
+                                }
+                            },
+                            "type":  "Recurrence"
+                        }
+                    },
+                    "actions":  {
+                        "Sentinel_Query":  {
+                            "runAfter":  {
+                                "Initialize_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['azuremonitorlogs-1']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  "@variables('Query')",
+                                "path":  "/queryData",
+                                "queries":  {
+                                    "subscriptions":  "xxxxxxxxxxxxxxxxx",
+                                    "resourcegroups":  "Sentinel",
+                                    "resourcetype":  "Log Analytics Workspace",
+                                    "resourcename":  "Sentinel",
+                                    "timerange":  "Set in query"
+                                }
+                            }
+                        },
+                        "Initialize_Query":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Query",
+                                        "type":  "string",
+                                        "value":  "union *\n| summarize Total = count() by Type\n| sort by Total"
+                                    }
+                                ]
+                            }
+                        },
+                        "Defender_Query":  {
+                            "runAfter":  {
+                                "Initialize_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ApiConnection",
+                            "inputs":  {
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['wdatp']['connectionId']"
+                                    }
+                                },
+                                "method":  "post",
+                                "body":  {
+                                    "Query":  "@variables('Query')"
+                                },
+                                "path":  "/api/advancedqueries/run"
+                            }
+                        },
+                        "Graph_Query":  {
+                            "actions":  {
+                                "Connect_MS_Graph_API":  {
+                                    "runAfter":  {
+                                        "Get_secret":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "uri":  "https://login.microsoftonline.com/@{variables('TenantId')}/oauth2/v2.0/token",
+                                        "method":  "POST",
+                                        "headers":  {
+                                            "Content-Type":  "application/x-www-form-urlencoded"
+                                        },
+                                        "body":  "client_id=@{variables('ClientID')}\u0026scope=https%3A%2F%2Fgraph.microsoft.com%2F.default\u0026client_secret=@{body('Get_secret')?['value']}\u0026grant_type=client_credentials"
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "contentTransfer":  {
+                                            "transferMode":  "Chunked"
+                                        },
+                                        "secureData":  {
+                                            "properties":  [
+                                                "inputs",
+                                                "outputs"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "Parse_JSON":  {
+                                    "runAfter":  {
+                                        "Connect_MS_Graph_API":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@body('Connect_MS_Graph_API')",
+                                        "schema":  {
+                                            "properties":  {
+                                                "access_token":  {
+                                                    "type":  "string"
+                                                },
+                                                "expires_in":  {
+                                                    "type":  "integer"
+                                                },
+                                                "ext_expires_in":  {
+                                                    "type":  "integer"
+                                                },
+                                                "token_type":  {
+                                                    "type":  "string"
+                                                }
+                                            },
+                                            "type":  "object"
+                                        }
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "secureData":  {
+                                            "properties":  [
+                                                "inputs"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "Execute_Query":  {
+                                    "runAfter":  {
+                                        "Parse_JSON":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "uri":  "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                                        "method":  "POST",
+                                        "headers":  {
+                                            "Authorization":  "@{body('Parse_JSON')?['access_token']}"
+                                        },
+                                        "body":  {
+                                            "Query":  "@{variables('Query')}"
+                                        }
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "contentTransfer":  {
+                                            "transferMode":  "Chunked"
+                                        },
+                                        "secureData":  {
+                                            "properties":  [
+                                                "inputs"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "Get_secret":  {
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['keyvault']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "get",
+                                        "path":  "/secrets/@{encodeURIComponent('GraphHunter')}/value"
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "secureData":  {
+                                            "properties":  [
+                                                "inputs",
+                                                "outputs"
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "ClientID":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Scope"
+                        },
+                        "ClientID":  {
+                            "runAfter":  {
+                                "TenantId":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ClientID",
+                                        "type":  "string",
+                                        "value":  "YourAppIDHere"
+                                    }
+                                ]
+                            }
+                        },
+                        "TenantId":  {
+                            "runAfter":  {
+                                "Initialize_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "TenantId",
+                                        "type":  "string",
+                                        "value":  "YourTenantIDHere"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "azuremonitorlogs-1":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Azuremonitorlogs-1ConnectionName'))]",
+                                "connectionName":  "[variables('Azuremonitorlogs-1ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs-1')]"
+                            },
+                            "wdatp":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('WdatpConnectionName'))]",
+                                "connectionName":  "[variables('WdatpConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Wdatp')]"
+                            },
+                            "keyvault":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('KeyvaultConnectionName'))]",
+                                "connectionName":  "[variables('KeyvaultConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Keyvault')]",
+                                "connectionProperties":  {
+                                    "authentication":  {
+                                        "type":  "ManagedServiceIdentity"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "KQL-API-Comparison",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('Azuremonitorlogs-1ConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('WdatpConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('KeyvaultConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Azuremonitorlogs-1ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Azuremonitorlogs-1ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs-1')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('WdatpConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('WdatpConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Wdatp')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('KeyvaultConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('KeyvaultConnectionName')]",
+                "customParameterValues":  {
+                },
+                "parameterValueType":  "Alternative",
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Keyvault')]"
+                }
+            }
+        }
+    ]
+}
