@@ -113,7 +113,7 @@
                                     {
                                         "name":  "Query",
                                         "type":  "string",
-                                        "value":  "union *\n| summarize Total = count() by Type\n| sort by Total"
+                                        "value":  "DeviceEvents\n| take 10"
                                     }
                                 ]
                             }

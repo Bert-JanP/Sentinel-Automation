@@ -17,3 +17,4 @@ Logic App to show the KQL capabilities of the Graph API, Azure Monitor API and D
 | Version | Description | Date |
 | ------- | ---------- | ----- |
 | 1.0 | Initial Version | 11/7/2025 |
+| 1.1 | Adjust query | 14/7/2025 |
