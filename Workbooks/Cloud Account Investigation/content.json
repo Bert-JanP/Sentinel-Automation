@@ -1,434 +1,665 @@
 {
-    "version": "Notebook/1.0",
-    "items": [
-      {
-        "type": 1,
-        "content": {
-          "json": "## Entity Dashboard\n---"
-        },
-        "name": "text - 2"
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Cloud Account Investigation\n---\n\nThis workbook serves as tool to help simplify Cloud Account Investigations, such as AiTM, Anomalous Sign-Ins, Suspicious Tokens and post-compromise activities.\n\n**Workbook source: https://github.com/Bert-JanP/Sentinel-Automation/tree/main/Workbooks/Cloud%20Account%20Investigation**"
       },
-      {
-        "type": 9,
-        "content": {
-          "version": "KqlParameterItem/1.0",
-          "parameters": [
-            {
-              "version": "KqlParameterItem/1.0",
-              "name": "DefaultSubscription_Internal",
-              "type": 1,
-              "isRequired": true,
-              "query": "where type =~ 'microsoft.operationalinsights/workspaces'\r\n| take 1\r\n| project subscriptionId",
-              "crossComponentResources": [
-                "value::selected"
-              ],
-              "isHiddenWhenLocked": true,
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "id": "314d02bf-4691-43fa-af59-d67073c8b8fa"
-            },
-            {
-              "id": "e6ded9a1-a83c-4762-938d-5bf8ff3d3d38",
-              "version": "KqlParameterItem/1.0",
-              "name": "Subscription",
-              "type": 6,
-              "isRequired": true,
-              "multiSelect": true,
-              "quote": "'",
-              "delimiter": ",",
-              "query": "summarize by subscriptionId\r\n| project value = strcat(\"/subscriptions/\", subscriptionId), label = subscriptionId, selected = iff(subscriptionId =~ '{DefaultSubscription_Internal}', true, false)",
-              "crossComponentResources": [
+      "name": "text - 2"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "version": "KqlParameterItem/1.0",
+            "name": "DefaultSubscription_Internal",
+            "type": 1,
+            "isRequired": true,
+            "query": "where type =~ 'microsoft.operationalinsights/workspaces'\r\n| take 1\r\n| project subscriptionId",
+            "crossComponentResources": [
+              "value::selected"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "id": "314d02bf-4691-43fa-af59-d67073c8b8fa"
+          },
+          {
+            "id": "e6ded9a1-a83c-4762-938d-5bf8ff3d3d38",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscription",
+            "type": 6,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "summarize by subscriptionId\r\n| project value = strcat(\"/subscriptions/\", subscriptionId), label = subscriptionId, selected = iff(subscriptionId =~ '{DefaultSubscription_Internal}', true, false)",
+            "crossComponentResources": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
                 "value::all"
               ],
-              "typeSettings": {
-                "additionalResourceOptions": [
-                  "value::all"
-                ],
-                "showDefault": false
-              },
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "value": [
-                "value::all"
-              ]
+              "showDefault": false
             },
-            {
-              "id": "e3225ed0-6210-40a1-b2d0-66e42ffa71d6",
-              "version": "KqlParameterItem/1.0",
-              "name": "Workspace",
-              "type": 5,
-              "isRequired": true,
-              "multiSelect": true,
-              "quote": "'",
-              "delimiter": ",",
-              "query": "resources\r\n| where type =~ 'microsoft.operationalinsights/workspaces'\r\n| order by name asc\r\n| summarize Selected = makelist(id, 10), All = makelist(id, 1000)\r\n| mvexpand All limit 100\r\n| project value = tostring(All), label = tostring(All), selected = iff(Selected contains All, true, false)",
-              "crossComponentResources": [
-                "{Subscription}"
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "e3225ed0-6210-40a1-b2d0-66e42ffa71d6",
+            "version": "KqlParameterItem/1.0",
+            "name": "Workspace",
+            "type": 5,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "resources\r\n| where type =~ 'microsoft.operationalinsights/workspaces'\r\n| order by name asc\r\n| summarize Selected = makelist(id, 10), All = makelist(id, 1000)\r\n| mvexpand All limit 100\r\n| project value = tostring(All), label = tostring(All), selected = iff(Selected contains All, true, false)",
+            "crossComponentResources": [
+              "{Subscription}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
               ],
-              "typeSettings": {
-                "additionalResourceOptions": [
-                  "value::all"
-                ],
-                "showDefault": false
-              },
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "value": [
-                "value::all"
-              ]
+              "showDefault": false
             },
-            {
-              "id": "7c851cd2-a984-4a21-aaaa-a0278a50de79",
-              "version": "KqlParameterItem/1.0",
-              "name": "TimeFrame",
-              "type": 4,
-              "isRequired": true,
-              "typeSettings": {
-                "selectableValues": [
-                  {
-                    "durationMs": 1800000
-                  },
-                  {
-                    "durationMs": 3600000
-                  },
-                  {
-                    "durationMs": 14400000
-                  },
-                  {
-                    "durationMs": 43200000
-                  },
-                  {
-                    "durationMs": 86400000
-                  },
-                  {
-                    "durationMs": 172800000
-                  },
-                  {
-                    "durationMs": 259200000
-                  },
-                  {
-                    "durationMs": 604800000
-                  },
-                  {
-                    "durationMs": 1209600000
-                  },
-                  {
-                    "durationMs": 2419200000
-                  },
-                  {
-                    "durationMs": 2592000000
-                  },
-                  {
-                    "durationMs": 5184000000
-                  },
-                  {
-                    "durationMs": 7776000000
-                  }
-                ],
-                "allowCustom": true
-              },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "81eb12fb-c6a0-4d0a-b088-8226f524c51b",
+            "version": "KqlParameterItem/1.0",
+            "name": "Timeframe",
+            "type": 4,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "value": {
+              "durationMs": 7776000000
+            }
+          },
+          {
+            "id": "63a74b65-346e-4c6f-b356-cee77a82ad99",
+            "version": "KqlParameterItem/1.0",
+            "name": "UserPrincipalName",
+            "type": 1,
+            "description": "UserPrincipalName that needs investigation",
+            "isRequired": true,
+            "value": "test@kqlquery.com"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 2"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Summary: {UserPrincipalName}"
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let Parameter = \"{UserPrincipalName}\";\r\nIdentityInfo\r\n| where TimeGenerated > ago(30d)\r\n| summarize arg_max(TimeGenerated, *) by AccountObjectId\r\n| where AccountUPN =~ Parameter\r\n| extend PriviligedAccount = iff(AssignedRoles has \"Administrator\", \"warning\", \"none\")\r\n| project PriviligedAccount, AccountUPN, AccountDomain, Department, JobTitle, Manager, RiskLevel, RiskState, GroupMembership, AssignedRoles",
+              "size": 4,
               "timeContext": {
-                "durationMs": 86400000
-              },
-              "value": {
                 "durationMs": 2592000000
-              }
-            },
-            {
-              "id": "017f01be-4c09-4c69-b46a-e15c2daa1b5f",
-              "version": "KqlParameterItem/1.0",
-              "name": "AccountUPN",
-              "type": 1,
-              "isRequired": true,
-              "timeContext": {
-                "durationMs": 0
               },
-              "timeContextFromParameter": "TimeFrame",
-              "value": "10.0.0.4",
-              "label": "Entity"
-            },
-            {
-              "id": "91dc02f3-7dff-491e-be2a-278f6a587111",
-              "version": "KqlParameterItem/1.0",
-              "name": "DataType",
-              "type": 2,
-              "isRequired": true,
-              "multiSelect": true,
-              "quote": "'",
-              "delimiter": ",",
-              "query": "search \"{AccountUPN}\"\r\n| distinct Type\r\n| sort by Type asc",
-              "typeSettings": {
-                "additionalResourceOptions": [
-                  "value::all"
-                ],
-                "showDefault": false
-              },
-              "timeContext": {
-                "durationMs": 0
-              },
-              "timeContextFromParameter": "TimeFrame",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
-              "value": [
-                "value::all"
-              ]
-            }
-          ],
-          "style": "pills",
-          "queryType": 0,
-          "resourceType": "microsoft.operationalinsights/workspaces"
-        },
-        "name": "parameters - 1"
-      },
-      {
-        "type": 12,
-        "content": {
-          "version": "NotebookGroup/1.0",
-          "groupType": "editable",
-          "items": [
-            {
-              "type": 1,
-              "content": {
-                "json": "## Data Inflow - {AccountUPN}"
-              },
-              "name": "text - 0"
-            },
-            {
-              "type": 3,
-              "content": {
-                "version": "KqlItem/1.0",
-                "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| summarize TotalEvents = count() by bin(TimeGenerated, 1d), Type\r\n| project-rename DataType = Type",
-                "size": 0,
-                "timeContextFromParameter": "TimeFrame",
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces",
-                "crossComponentResources": [
-                  "{Workspace}"
-                ],
-                "visualization": "categoricalbar",
-                "chartSettings": {
-                  "xAxis": "TimeGenerated",
-                  "yAxis": [
-                    "TotalEvents"
-                  ],
-                  "group": "DataType",
-                  "createOtherGroup": null
-                }
-              },
-              "name": "query - 1"
-            },
-            {
-              "type": 12,
-              "content": {
-                "version": "NotebookGroup/1.0",
-                "groupType": "editable",
-                "items": []
-              },
-              "name": "group - 4"
-            },
-            {
-              "type": 12,
-              "content": {
-                "version": "NotebookGroup/1.0",
-                "groupType": "editable",
-                "items": [
+              "gridSettings": {
+                "formatters": [
                   {
-                    "type": 1,
-                    "content": {
-                      "json": "## Tables with most events"
-                    },
-                    "name": "text - 1"
-                  },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| summarize TotalEvents = count() by Type\r\n| project-rename DataType = Type\r\n| top 10 by TotalEvents",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
-                      ],
-                      "visualization": "barchart"
-                    },
-                    "name": "query - 2"
+                    "columnMatch": "PriviligedAccount",
+                    "formatter": 11
                   }
                 ]
-              },
-              "customWidth": "50",
-              "name": "group - 4"
+              }
             },
-            {
-              "type": 12,
-              "content": {
-                "version": "NotebookGroup/1.0",
-                "groupType": "editable",
-                "items": [
-                  {
-                    "type": 1,
-                    "content": {
-                      "json": "## Table statistics"
-                    },
-                    "name": "text - 1"
-                  },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| summarize TotalEvents = count() by Type\r\n| project-rename DataType = Type\r\n| sort by TotalEvents",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
-                      ]
-                    },
-                    "name": "query - 0"
-                  }
-                ]
-              },
-              "customWidth": "50",
-              "name": "group - 4"
-            }
-          ]
-        },
-        "name": "group - 2"
-      },
-      {
-        "type": 12,
-        "content": {
-          "version": "NotebookGroup/1.0",
-          "groupType": "editable",
-          "items": [
-            {
-              "type": 12,
-              "content": {
-                "version": "NotebookGroup/1.0",
-                "groupType": "editable",
-                "items": [
-                  {
-                    "type": 1,
-                    "content": {
-                      "json": "### Top Activities - {AccountUPN}\r\n"
-                    },
-                    "name": "text - 0"
-                  },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\r\n| where isnotempty(Action)\r\n| summarize TotalEvents = count() by Type, Action\r\n| project-rename DataType = Type\r\n| top 10 by TotalEvents",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
-                      ]
-                    },
-                    "customWidth": "50",
-                    "name": "query - 1"
-                  },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\r\n| where isnotempty(Action)\r\n| summarize TotalEvents = count() by Action",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
-                      ],
-                      "visualization": "piechart"
-                    },
-                    "customWidth": "50",
-                    "name": "query - 2"
-                  },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\r\n| where isnotempty(Action)\r\n| summarize TotalEvents = count() by bin(TimeGenerated, 1d), Action",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
-                      ],
-                      "visualization": "barchart",
-                      "chartSettings": {
-                        "ySettings": {
-                          "label": "Total Events"
+            "name": "query - 2"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "title": "Statiscs",
+              "items": [
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let Parameter = \"{UserPrincipalName}\";\r\nSecurityAlert\r\n| summarize arg_max(TimeGenerated, *) by SystemAlertId\r\n| where Entities has Parameter\r\n| summarize Total = count() by AlertSeverity",
+                    "size": 0,
+                    "title": "Alerts",
+                    "timeContextFromParameter": "Timeframe",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{Workspace}"
+                    ],
+                    "visualization": "piechart",
+                    "chartSettings": {
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "medium",
+                          "color": "orange"
+                        },
+                        {
+                          "seriesName": "low",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "high",
+                          "color": "red"
+                        },
+                        {
+                          "seriesName": "High",
+                          "color": "red"
+                        },
+                        {
+                          "seriesName": "Medium",
+                          "color": "orange"
+                        },
+                        {
+                          "seriesName": "Low",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Informational",
+                          "color": "gray"
                         }
-                      }
-                    },
-                    "name": "query - 3"
-                  }
-                ]
-              },
-              "customWidth": "100",
-              "name": "group - 0"
+                      ]
+                    }
+                  },
+                  "customWidth": "33",
+                  "name": "query - 0 - Copy"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let Parameter = \"{UserPrincipalName}\";\r\nAADUserRiskEvents\r\n| where UserPrincipalName =~ Parameter\r\n| summarize Total = count() by RiskLevel",
+                    "size": 0,
+                    "title": "User Risk Events",
+                    "timeContextFromParameter": "Timeframe",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{Workspace}"
+                    ],
+                    "visualization": "piechart",
+                    "chartSettings": {
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "medium",
+                          "color": "orange"
+                        },
+                        {
+                          "seriesName": "low",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "high",
+                          "color": "red"
+                        }
+                      ]
+                    }
+                  },
+                  "customWidth": "33",
+                  "name": "query - 0"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let Parameter = \"{UserPrincipalName}\";\r\nAnomalies\r\n| where Entities has Parameter or UserPrincipalName =~ Parameter\r\n| summarize Total = count() by bin(TimeGenerated, 1d)",
+                    "size": 0,
+                    "title": "Anomalies",
+                    "timeContextFromParameter": "Timeframe",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{Workspace}"
+                    ],
+                    "visualization": "timechart",
+                    "chartSettings": {
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "medium",
+                          "color": "orange"
+                        },
+                        {
+                          "seriesName": "low",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "high",
+                          "color": "red"
+                        }
+                      ]
+                    }
+                  },
+                  "customWidth": "33",
+                  "name": "query - 0 - Copy"
+                }
+              ]
             },
-            {
-              "type": 12,
-              "content": {
-                "version": "NotebookGroup/1.0",
-                "groupType": "editable",
-                "items": [
-                  {
-                    "type": 1,
-                    "content": {
-                      "json": "### Actions"
-                    },
-                    "name": "text - 0"
+            "name": "Summary Stats"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### Related Incidents",
+                    "style": "warning"
                   },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\r\n| where isnotempty(Action)\r\n| summarize TotalEvents = count() by Type, Action\r\n| project-rename DataType = Type\r\n| top 25 by TotalEvents asc",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
+                  "name": "text - 0"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let Parameter = \"{UserPrincipalName}\";\r\nSecurityAlert\r\n| summarize arg_max(TimeGenerated, *) by SystemAlertId\r\n| where Entities has Parameter\r\n| project StartTime, DisplayName, AlertSeverity, Status, ProductName, AlertLink\r\n| sort by StartTime desc  ",
+                    "size": 0,
+                    "showAnalytics": true,
+                    "timeContextFromParameter": "Timeframe",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{Workspace}"
+                    ],
+                    "visualization": "table",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "AlertLink",
+                          "formatter": 7,
+                          "formatOptions": {
+                            "linkTarget": "Url",
+                            "linkLabel": "Go to alert"
+                          }
+                        }
                       ]
                     },
-                    "customWidth": "50",
-                    "name": "query - 1"
-                  },
-                  {
-                    "type": 3,
-                    "content": {
-                      "version": "KqlItem/1.0",
-                      "query": "search \"{AccountUPN}\"\r\n| where Type in ({DataType})\r\n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType)\r\n| where isnotempty(Action)\r\n| summarize TotalEvents = count() by Type, Action\r\n| project-rename DataType = Type\r\n| sort by TotalEvents desc",
-                      "size": 0,
-                      "timeContextFromParameter": "TimeFrame",
-                      "queryType": 0,
-                      "resourceType": "microsoft.operationalinsights/workspaces",
-                      "crossComponentResources": [
-                        "{Workspace}"
+                    "chartSettings": {
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "High",
+                          "color": "red"
+                        },
+                        {
+                          "seriesName": "Medium",
+                          "color": "orange"
+                        },
+                        {
+                          "seriesName": "Low",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Informational",
+                          "color": "gray"
+                        }
                       ]
-                    },
-                    "customWidth": "50",
-                    "name": "query - 1 - Copy"
+                    }
+                  },
+                  "name": "query - 1"
+                }
+              ]
+            },
+            "name": "Incidents"
+          }
+        ]
+      },
+      "name": "Summary"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "# Audit Activities"
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let PersistenceEvents = dynamic(['add member', 'add device', 'register device', 'add service principal', 'update service principal', 'add user', 'enable account', 'add group', 'Invite external user', 'Add application', 'add app', 'User registered security info']);\r\nAuditLogs\r\n| where InitiatedBy has \"{UserPrincipalName}\"\r\n// Filter on DiscoveryEvents\r\n| where OperationName has_any (PersistenceEvents)\r\n| project TimeGenerated, Identity, OperationName, Category, ResultDescription, Result",
+              "size": 1,
+              "showAnalytics": true,
+              "title": "Cloud Persitence Events",
+              "noDataMessageStyle": 4,
+              "timeContextFromParameter": "Timeframe",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ]
+            },
+            "name": "query - 2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let Parameter = \"{UserPrincipalName}\";\r\nunion AuditLogs, AzureActivity, OfficeActivity\r\n| where UserId =~ Parameter or InitiatedBy has Parameter or Caller =~ Parameter\r\n| extend Action = coalesce(Operation, OperationName, OperationNameValue)\r\n| project-reorder TimeGenerated, Action, Type\r\n| sort by TimeGenerated",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "Audit Activities (Entra ID, Azure, Office 365)",
+              "timeContextFromParameter": "Timeframe",
+              "showExportToExcel": true,
+              "exportToExcelOptions": "all",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "gridSettings": {
+                "hierarchySettings": {
+                  "treeType": 1,
+                  "groupBy": [
+                    "Type",
+                    "Action"
+                  ]
+                }
+              }
+            },
+            "name": "query - 1"
+          }
+        ]
+      },
+      "name": "group - 3"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "# Sign-In Details\r\n\r\nThis sesction lists the sign-in details of {UserPrincipalName}. By default all sign-in logs are returned, based on alerts you can build a filter to list the relevant sign-ins.\r\n\r\n- **Country:** All countries from which sign-in activities are identified. By default all are included.\r\n- **IP:** Specify a specific IpAddress to filter on. By default all Ip Addresses are included.\r\n- **SignInRisk:** All risks during sign, this can help identify suspicious sign-in attempts. By default all are included.\r\n- **ResultType:** All ResultTypes identified. By default all are included, filter on ResultTypes 0 for only successful logins. More details on error codes: https://login.microsoftonline.com/error"
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "parameters": [
+                {
+                  "id": "ccaef9c6-662e-4a2a-9c8c-3d18ca86b7c8",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "Country",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "let Parameter = \"{UserPrincipalName}\";\r\nSigninLogs\r\n| where UserPrincipalName =~ Parameter\r\n| distinct Location",
+                  "crossComponentResources": [
+                    "{Workspace}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "timeContext": {
+                    "durationMs": 0
+                  },
+                  "timeContextFromParameter": "Timeframe",
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": [
+                    "AO"
+                  ]
+                },
+                {
+                  "id": "39a0e22b-d6bf-4029-a7a7-26989ebc477d",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "IP",
+                  "type": 1,
+                  "timeContext": {
+                    "durationMs": 0
+                  },
+                  "timeContextFromParameter": "Timeframe",
+                  "value": ""
+                },
+                {
+                  "id": "9435afea-6dbb-418e-a08d-c410aa061851",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "SignInRisk",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "SigninLogs\r\n| where UserPrincipalName =~ \"{UserPrincipalName}\"\r\n| distinct RiskLevelDuringSignIn",
+                  "crossComponentResources": [
+                    "{Workspace}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ]
+                  },
+                  "timeContext": {
+                    "durationMs": 0
+                  },
+                  "timeContextFromParameter": "Timeframe",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": [
+                    "low"
+                  ]
+                },
+                {
+                  "id": "81b7c3ff-9c62-40f2-a6d7-3e0e360422cc",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ResultType",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "let Parameter = \"{UserPrincipalName}\";\r\nlet IPAddressInput = \"{IP}\";\r\nSigninLogs\r\n| where UserPrincipalName =~ Parameter\r\n| where (isnotempty(IPAddressInput) and IPAddress == IPAddressInput) or isempty(IPAddressInput)\r\n| where RiskLevelDuringSignIn in~ ({SignInRisk})\r\n| distinct ResultType",
+                  "crossComponentResources": [
+                    "{Workspace}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ]
+                  },
+                  "timeContext": {
+                    "durationMs": 0
+                  },
+                  "timeContextFromParameter": "Timeframe",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": [
+                    "value::all"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 1"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let Parameter = \"{UserPrincipalName}\";\r\nlet IPAddressInput = \"{IP}\";\r\nSigninLogs\r\n| where UserPrincipalName =~ Parameter\r\n| where (isnotempty(IPAddressInput) and IPAddress == IPAddressInput) or isempty(IPAddressInput)\r\n| where RiskLevelDuringSignIn in~ ({SignInRisk})\r\n| where ResultType in~ ({ResultType})\r\n| project TimeGenerated, AppDisplayName, AppId, UserPrincipalName, ResultType, IPAddress, RiskLevelDuringSignIn, RiskLevel, RiskDetail, RiskEventTypes, SessionId",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "Risky Sign-Ins",
+              "timeContextFromParameter": "Timeframe",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "gridSettings": {
+                "sortBy": [
+                  {
+                    "itemKey": "SessionId",
+                    "sortOrder": 1
                   }
                 ]
               },
-              "name": "group - 1"
-            }
-          ]
-        },
-        "name": "group - 3"
-      }
-    ],
-    "fromTemplateId": "sentinel-UserWorkbook",
-    "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
-  }
+              "sortBy": [
+                {
+                  "itemKey": "SessionId",
+                  "sortOrder": 1
+                }
+              ]
+            },
+            "name": "query - 2"
+          }
+        ]
+      },
+      "name": "group - 4"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "# Graph API Calls\r\n\r\nUse the **SessionId** column from the *Sign-In Details* section to identify the Graph API call made by a suspicious session."
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "a6059fdc-9222-4655-bf4b-1353669d39ac",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "SessionId",
+                  "type": 1,
+                  "isRequired": true,
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "value": "006d2199-2eb5-f326-3b03-f4a2d3b35bc7"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 1"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let SessionIdInput = \"{SessionId}\";\r\nMicrosoftGraphActivityLogs\r\n| where SessionId =~ SessionIdInput\r\n| extend ParsedUri = tostring(parse_url(RequestUri).Path)\r\n| extend GraphAPIPath = tolower(replace_string(ParsedUri, \"//\", \"/\"))\r\n| extend GraphAPIResource = tostring(split(GraphAPIPath, \"/\")[2])\r\n| extend ObjectId = coalesce(UserId, ServicePrincipalId)\r\n| project TimeGenerated, ObjectId, GraphAPIResource, RequestUri, ResponseStatusCode, UserAgent",
+              "size": 2,
+              "showAnalytics": true,
+              "timeContextFromParameter": "Timeframe",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspace}"
+              ],
+              "gridSettings": {
+                "hierarchySettings": {
+                  "treeType": 1,
+                  "groupBy": [
+                    "GraphAPIResource"
+                  ]
+                }
+              }
+            },
+            "name": "query - 2"
+          }
+        ]
+      },
+      "name": "group - 5"
+    }
+  ],
+  "fromTemplateId": "sentinel-UserWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
