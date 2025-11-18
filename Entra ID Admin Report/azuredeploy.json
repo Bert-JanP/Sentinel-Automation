@@ -151,7 +151,7 @@
                                             }
                                         },
                                         "method":  "get",
-                                        "path":  "/secrets/@{encodeURIComponent('GraphHunter')}/value"
+                                        "path":  "/secrets/@{encodeURIComponent('KeyVaultName')}/value"
                                     },
                                     "runtimeConfiguration":  {
                                         "secureData":  {
