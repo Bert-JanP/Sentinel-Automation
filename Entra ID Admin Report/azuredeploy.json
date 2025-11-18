@@ -1,0 +1,684 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "Entra ID Admin Report",
+        "description":  "Schedules a weekly email listing sign-in trend, Conditional Access Policy changes and high priviliged Graph API assignments",
+        "prerequisites":  "",
+        "postDeployment":  [
+        ],
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  "Bert-Jan Pals"
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "Report-EntraAdmin",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "KeyvaultConnectionName":  "[concat('Keyvault-', parameters('PlaybookName'))]",
+        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]",
+        "AzuremonitorlogsConnectionName":  "[concat('Azuremonitorlogs-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "Recurrence":  {
+                            "recurrence":  {
+                                "frequency":  "Week",
+                                "interval":  1,
+                                "schedule":  {
+                                    "hours":  [
+                                        "10"
+                                    ],
+                                    "minutes":  [
+                                        45
+                                    ],
+                                    "weekDays":  [
+                                        "Monday"
+                                    ]
+                                },
+                                "timeZone":  "W. Europe Standard Time"
+                            },
+                            "evaluatedRecurrence":  {
+                                "frequency":  "Week",
+                                "interval":  1,
+                                "schedule":  {
+                                    "hours":  [
+                                        "10"
+                                    ],
+                                    "minutes":  [
+                                        45
+                                    ],
+                                    "weekDays":  [
+                                        "Monday"
+                                    ]
+                                },
+                                "timeZone":  "W. Europe Standard Time"
+                            },
+                            "type":  "Recurrence"
+                        }
+                    },
+                    "actions":  {
+                        "Get_Graph_Tokens":  {
+                            "actions":  {
+                                "Connect_MS_Graph_API":  {
+                                    "runAfter":  {
+                                        "Get_secret":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "uri":  "https://login.microsoftonline.com/@{variables('TenantId')}/oauth2/v2.0/token",
+                                        "method":  "POST",
+                                        "headers":  {
+                                            "Content-Type":  "application/x-www-form-urlencoded"
+                                        },
+                                        "body":  "client_id=@{variables('ClientId')}\u0026scope=https%3A%2F%2Fgraph.microsoft.com%2F.default\u0026client_secret=@{body('Get_secret')?['value']}\u0026grant_type=client_credentials"
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "contentTransfer":  {
+                                            "transferMode":  "Chunked"
+                                        },
+                                        "secureData":  {
+                                            "properties":  [
+                                                "inputs",
+                                                "outputs"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "Parse_Graph_Tokens":  {
+                                    "runAfter":  {
+                                        "Connect_MS_Graph_API":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@{body('Connect_MS_Graph_API')}\n",
+                                        "schema":  {
+                                            "properties":  {
+                                                "access_token":  {
+                                                    "type":  "string"
+                                                },
+                                                "expires_in":  {
+                                                    "type":  "integer"
+                                                },
+                                                "ext_expires_in":  {
+                                                    "type":  "integer"
+                                                },
+                                                "token_type":  {
+                                                    "type":  "string"
+                                                }
+                                            },
+                                            "type":  "object"
+                                        }
+                                    }
+                                },
+                                "Get_secret":  {
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['Keyvault']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "get",
+                                        "path":  "/secrets/@{encodeURIComponent('GraphHunter')}/value"
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "secureData":  {
+                                            "properties":  [
+                                                "inputs",
+                                                "outputs"
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Initialize_Sign_Ins_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Scope"
+                        },
+                        "Initialize_ReciepientAddress":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ReciepientAddress",
+                                        "type":  "string",
+                                        "value":  "test@test.com"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_TenantId":  {
+                            "runAfter":  {
+                                "Initialize_ReciepientAddress":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "TenantId",
+                                        "type":  "string",
+                                        "value":  "yourtentantid"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_ClientID":  {
+                            "runAfter":  {
+                                "Initialize_Sentinel_Instance":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ClientId",
+                                        "type":  "string",
+                                        "value":  "Application ID Graph API"
+                                    }
+                                ]
+                            }
+                        },
+                        "Return_Results":  {
+                            "actions":  {
+                                "Create_HTML_CA_Changes":  {
+                                    "runAfter":  {
+                                        "Parse_Results_CA_Changes":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Table",
+                                    "inputs":  {
+                                        "from":  "@body('Parse_Results_CA_Changes')?['results']",
+                                        "format":  "HTML"
+                                    }
+                                },
+                                "Send_Results":  {
+                                    "runAfter":  {
+                                        "Create_Email_HTML":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['office365']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "To":  "@variables('ReciepientAddress')",
+                                            "Subject":  "Entra Admin Report",
+                                            "Body":  "\u003cp class=\"editor-paragraph\"\u003e@{variables('EmailBody')}\u003c/p\u003e",
+                                            "Attachments":  [
+                                                {
+                                                    "Name":  "@body('Run_query_and_visualize_results')?['attachmentName']",
+                                                    "ContentBytes":  "@body('Run_query_and_visualize_results')?['attachmentContent']"
+                                                }
+                                            ],
+                                            "Importance":  "Normal"
+                                        },
+                                        "path":  "/v2/Mail"
+                                    }
+                                },
+                                "Create_Email_HTML":  {
+                                    "runAfter":  {
+                                        "Create_HTML_Graph_ReadWrite_Permissions":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "SetVariable",
+                                    "inputs":  {
+                                        "name":  "EmailBody",
+                                        "value":  "\u003c!doctype html\u003e\n\u003chtml lang=\"en\"\u003e\n\u003chead\u003e\n    \u003cmeta charset=\"utf-8\" /\u003e\n    \u003cmeta name=\"viewport\" content=\"width=device-width,initial-scale=1\" /\u003e\n    \u003ctitle\u003eEntra ID Admin report\u003c/title\u003e\n    \u003cstyle\u003e\n        /* Email-friendly, largely inline-friendly styles but kept here for clarity */\n        body {\n            margin: 0;\n            padding: 0;\n            background: #f4f7fb;\n            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial;\n            color: #1a2b46;\n        }\n        .container {\n            width: 100%;\n            max-width: 720px;\n            margin: 24px auto;\n            background: #ffffff;\n            border-radius: 8px;\n            overflow: hidden;\n            box-shadow: 0 2px 8px rgba(26,43,70,0.08);\n        }\n        .header {\n            background: linear-gradient(90deg,#0b62b8 0%, #2a9df4 100%);\n            color: #fff;\n            padding: 20px 24px;\n        }\n        .title {\n            font-size: 1.25rem;\n            margin: 0 0 4px 0;\n            font-weight: 600;\n        }\n        .subtitle {\n            margin: 0;\n            font-size: 0.9rem;\n            opacity: 0.95;\n        }\n        .content {\n            padding: 18px 20px;\n        }\n        .section-title {\n            font-size: 1rem;\n            color: #06203a;\n            margin: 12px 0 8px 0;\n            font-weight: 600;\n        }\n        .section-desc {\n            font-size: 0.9rem;\n            color: #334659;\n            margin: 0 0 12px 0;\n            line-height: 1.4;\n        }\n\n        /* Placeholder and dynamic content */\n        .placeholder {\n            border: 2px dashed #d3e8ff;\n            background: linear-gradient(180deg, rgba(10,99,210,0.03), rgba(10,99,210,0.01));\n            padding: 14px;\n            border-radius: 6px;\n            color: #0b62b8;\n            text-align: center;\n            font-weight: 600;\n            min-height: 120px;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            gap: 10px;\n            margin-bottom: 12px;\n        }\n        .placeholder .dynamic-content {\n            display: block;\n            width: 100%;\n            text-align: left;\n            color: inherit;\n            font-weight: 400;\n            min-height: 0;\n        }\n        /* Ensure injected tables fit and wrap */\n        .dynamic-content table {\n            width: 100% !important;\n            max-width: 100% !important;\n            border-collapse: collapse !important;\n            table-layout: fixed !important;\n            word-wrap: break-word !important;\n            overflow-wrap: break-word !important;\n        }\n        .dynamic-content th,\n        .dynamic-content td {\n            padding: 6px 8px;\n            border: 1px solid #e6eef9;\n            text-align: left;\n            vertical-align: top;\n            font-size: 0.85rem;\n        }\n        .dynamic-content img {\n            max-width: 100% !important;\n            height: auto !important;\n            display: block;\n            margin: 0 auto;\n            border: 0;\n        }\n        .no-results {\n            color: #155fa0;\n            background: rgba(11,98,184,0.06);\n            border: 1px solid rgba(11,98,184,0.12);\n            padding: 10px 14px;\n            border-radius: 6px;\n            font-weight: 600;\n            display: inline-block;\n        }\n\n        /* Wrap to allow horizontal scroll in strict clients */\n        .table-wrap {\n            width: 100%;\n            overflow-x: auto;\n            -webkit-overflow-scrolling: touch;\n            margin-bottom: 8px;\n        }\n\n        .meta {\n            font-size: 0.8rem;\n            color: #6b7b8a;\n            margin-bottom: 8px;\n        }\n        .muted { color: #6b7b8a; font-size: 0.85rem; }\n\n        /* Queries box */\n        .queries {\n            margin-top: 14px;\n            padding: 12px;\n            background: #fbfdff;\n            border: 1px solid #e6f2ff;\n            border-radius: 6px;\n        }\n        .query-label {\n            font-size: 0.85rem;\n            color: #09325a;\n            margin: 6px 0;\n            font-weight: 600;\n        }\n        .query-box {\n            display: flex;\n            gap: 8px;\n            align-items: flex-start;\n            margin-top: 8px;\n        }\n        .query-textarea {\n            width: 100%;\n            min-height: 72px;\n            max-height: 240px;\n            resize: vertical;\n            padding: 8px;\n            font-family: monospace;\n            font-size: 0.85rem;\n            color: #16324a;\n            background: #f7fbff;\n            border: 1px solid #dbeffb;\n            border-radius: 6px;\n            overflow: auto;\n        }\n        .copy-btn {\n            background: linear-gradient(180deg,#0b62b8,#0b62b8);\n            color: #fff;\n            border: none;\n            padding: 8px 10px;\n            border-radius: 6px;\n            font-size: 0.85rem;\n            cursor: pointer;\n            white-space: nowrap;\n        }\n        .copy-status {\n            font-size: 0.8rem;\n            color: #2a6fb6;\n            margin-top: 6px;\n        }\n\n        /* Make tables responsive for email clients */\n        table.main-table { width: 100%; border-collapse: collapse; }\n        td { vertical-align: top; }\n\n        @media only screen and (max-width: 480px) {\n            .container { margin: 12px; }\n            .placeholder { min-height: 100px; padding: 12px; font-size: 0.95rem; }\n            .copy-btn { padding: 8px; font-size: 0.85rem; }\n        }\n    \u003c/style\u003e\n\n    \u003c!-- inline script: will work in web clients; many email clients block JS --\u003e\n    \u003cscript\u003e\n        function copyToClipboard(textAreaId, statusId) {\n            try {\n                var ta = document.getElementById(textAreaId);\n                if (!ta) return;\n                // Select and copy\n                ta.select ? ta.select() : ta.focus();\n                if (navigator.clipboard \u0026\u0026 window.isSecureContext) {\n                    // modern secure context\n                    navigator.clipboard.writeText(ta.value).then(function(){\n                        showStatus(statusId, 'Copied!');\n                    }, function(){\n                        showStatus(statusId, 'Copy failed');\n                    });\n                } else {\n                    // fallback for older browsers\n                    var successful = document.execCommand('copy');\n                    showStatus(statusId, successful ? 'Copied!' : 'Copy failed');\n                }\n            } catch (e) {\n                showStatus(statusId, 'Copy failed');\n            }\n        }\n        function showStatus(id, text) {\n            var el = document.getElementById(id);\n            if (!el) return;\n            el.textContent = text;\n            setTimeout(function(){ el.textContent = ''; }, 2500);\n        }\n    \u003c/script\u003e\n\u003c/head\u003e\n\u003cbody\u003e\n    \u003cdiv class=\"container\" role=\"article\" aria-label=\"Entra ID Admin report\"\u003e\n        \u003ctable class=\"main-table\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\"\u003e\n            \u003ctbody\u003e\n                \u003ctr\u003e\n                    \u003ctd\u003e\n                        \u003cdiv class=\"header\"\u003e\n                            \u003ch1 class=\"title\" style=\"margin:0;\"\u003eEntra ID Admin report\u003c/h1\u003e\n                            \u003cp class=\"subtitle\" style=\"margin:4px 0 0 0;\"\u003eSummary snapshot of sign-ins, service principal permission changes and Conditional Access policy updates.\u003c/p\u003e\n                        \u003c/div\u003e\n                    \u003c/td\u003e\n                \u003c/tr\u003e\n\n                \u003ctr\u003e\n                    \u003ctd\u003e\n                        \u003cdiv class=\"content\"\u003e\n                            \u003cp class=\"meta\"\u003eGenerated: 2025-11-08 09:47:31 UTC\u003c/p\u003e\n\n                            \u003c!-- Section 1: Bar chart with sign-in information --\u003e\n                            \u003cdiv role=\"region\" aria-labelledby=\"sectionsignin\"\u003e\n                                \u003ch2 id=\"sectionsignin\" class=\"section-title\"\u003e1. Sign-in activity (bar chart)\u003c/h2\u003e\n                                \u003cp class=\"section-desc\"\u003e\n                                    This section contains a visual overview of sign-in trends over the reporting period. It highlights successful and failed sign-ins, sign-ins from risky locations, and interactive vs non-interactive sign-ins.\n                                \u003c/p\u003e\n                                \u003cdiv class=\"placeholder\" aria-hidden=\"true\" title=\"Placeholder for bar chart\"\u003e\n                                    @{if(empty(body('Run_query_and_visualize_results')?['attachmentName']),\n                                        '\u003cdiv class=\"no-results\"\u003eNo results found in the report timeframe\u003c/div\u003e',\n                                        concat('\u003cdiv class=\"dynamic-content\"\u003e\u003cimg src=\"cid:', body('Run_query_and_visualize_results')?['attachmentName'], '\" alt=\"Sign-in bar chart\" /\u003e\u003c/div\u003e')\n                                    )}\n                                \u003c/div\u003e\n                            \u003c/div\u003e\n\n                            \u003c!-- Section 2: Service Principals with Graph ReadWrite permissions added --\u003e\n                            \u003cdiv role=\"region\" aria-labelledby=\"sectionsp\" style=\"margin-top:12px;\"\u003e\n                                \u003ch2 id=\"sectionsp\" class=\"section-title\"\u003e2. Service Principals with Graph ReadWrite permissions added\u003c/h2\u003e\n                                \u003cp class=\"section-desc\"\u003e\n                                    This section lists service principals that were granted Graph API delegated or application permissions with ReadWrite scope during the reporting period.\n                                \u003c/p\u003e\n                                \u003cdiv class=\"table-wrap\"\u003e\n                                    \u003cdiv class=\"placeholder\" aria-hidden=\"true\" title=\"Placeholder for service principals\" style=\"display:block;\"\u003e\n                                        \u003cdiv class=\"dynamic-content\"\u003e\n                                            @{if(empty(body('Create_HTML_Graph_ReadWrite_Permissions')), '\u003cdiv class=\"no-results\"\u003eNo results found in the report timeframe\u003c/div\u003e', body('Create_HTML_Graph_ReadWrite_Permissions'))}\n                                        \u003c/div\u003e\n                                    \u003c/div\u003e\n                                \u003c/div\u003e\n                            \u003c/div\u003e\n\n                            \u003c!-- Section 3: Conditional Access policy changes --\u003e\n                            \u003cdiv role=\"region\" aria-labelledby=\"sectioncap\" style=\"margin-top:12px;\"\u003e\n                                \u003ch2 id=\"sectioncap\" class=\"section-title\"\u003e3. Conditional Access policy changes\u003c/h2\u003e\n                                \u003cp class=\"section-desc\"\u003e\n                                    This section summarizes Conditional Access policy creations, updates, or deletions during the reporting period.\n                                \u003c/p\u003e\n                                \u003cdiv class=\"table-wrap\"\u003e\n                                    \u003cdiv class=\"placeholder\" aria-hidden=\"true\" title=\"Placeholder for conditional access changes\" style=\"display:block;\"\u003e\n                                        \u003cdiv class=\"dynamic-content\"\u003e\n                                            @{if(empty(body('Create_HTML_CA_Changes')), '\u003cdiv class=\"no-results\"\u003eNo results found in the report timeframe\u003c/div\u003e', body('Create_HTML_CA_Changes'))}\n                                        \u003c/div\u003e\n                                    \u003c/div\u003e\n                                \u003c/div\u003e\n                            \u003c/div\u003e\n\n                            \u003c!-- Queries used (variables) --\u003e\n                            \u003cdiv class=\"queries\" role=\"region\" aria-labelledby=\"querieslabel\"\u003e\n                                \u003cdiv id=\"querieslabel\" class=\"query-label\"\u003eQueries used (report timeframe)\u003c/div\u003e\n\n                                \u003c!-- CA Changes query --\u003e\n                                \u003cdiv style=\"margin-top:8px;\"\u003e\n                                    \u003cdiv class=\"query-label\" style=\"font-size:0.85rem; font-weight:600; color:#0b62b8;\"\u003eConditional Access query\u003c/div\u003e\n                                    \u003cdiv class=\"query-box\"\u003e\n                                        \u003ctextarea id=\"caQuery\" class=\"query-textarea\" readonly aria-label=\"Conditional Access query\"\u003e@{variables('CA_Changes')}\u003c/textarea\u003e\n                                        \u003cdiv style=\"display:flex; flex-direction:column; gap:6px;\"\u003e\n                                            \u003cbutton type=\"button\" class=\"copy-btn\" onclick=\"copyToClipboard('caQuery','caStatus')\" aria-label=\"Copy Conditional Access query\"\u003eCopy\u003c/button\u003e\n                                            \u003cdiv id=\"caStatus\" class=\"copy-status\" aria-live=\"polite\"\u003e\u003c/div\u003e\n                                        \u003c/div\u003e\n                                    \u003c/div\u003e\n                                    \u003cdiv class=\"muted\" style=\"margin-top:6px;\"\u003eYou can copy the query above. If the copy button doesn't work in your mail client, select the text and copy manually.\u003c/div\u003e\n                                \u003c/div\u003e\n\n                                \u003c!-- Graph ReadWrite query --\u003e\n                                \u003cdiv style=\"margin-top:12px;\"\u003e\n                                    \u003cdiv class=\"query-label\" style=\"font-size:0.85rem; font-weight:600; color:#0b62b8;\"\u003eGraph ReadWrite permissions query\u003c/div\u003e\n                                    \u003cdiv class=\"query-box\"\u003e\n                                        \u003ctextarea id=\"graphQuery\" class=\"query-textarea\" readonly aria-label=\"Graph ReadWrite query\"\u003e@{variables('Graph_ReadWrite_Permissions')}\u003c/textarea\u003e\n                                        \u003cdiv style=\"display:flex; flex-direction:column; gap:6px;\"\u003e\n                                            \u003cbutton type=\"button\" class=\"copy-btn\" onclick=\"copyToClipboard('graphQuery','graphStatus')\" aria-label=\"Copy Graph query\"\u003eCopy\u003c/button\u003e\n                                            \u003cdiv id=\"graphStatus\" class=\"copy-status\" aria-live=\"polite\"\u003e\u003c/div\u003e\n                                        \u003c/div\u003e\n                                    \u003c/div\u003e\n                                    \u003cdiv class=\"muted\" style=\"margin-top:6px;\"\u003eDisplayed as monospace for easy copying. These values come from the flow variables.\u003c/div\u003e\n                                \u003c/div\u003e\n                            \u003c/div\u003e\n\n                            \u003c!-- Optional call-to-action --\u003e\n                            \u003cdiv style=\"margin-top:18px; padding:12px; background:#f1f8ff; border-radius:6px; border:1px solid #e1f0ff;\"\u003e\n                                \u003cp style=\"margin:0; color:#09325a; font-size:0.95rem;\"\u003e\n                                    For remediation suggestions or to request the raw data behind any section, respond to this email or contact the Entra ID admin team.\n                                \u003c/p\u003e\n                            \u003c/div\u003e\n\n                        \u003c/div\u003e\n                    \u003c/td\u003e\n                \u003c/tr\u003e\n\n            \u003c/tbody\u003e\n        \u003c/table\u003e\n    \u003c/div\u003e\n\n    \u003cdiv class='footer' style='padding:12px 16px; text-align:center; font-size:0.9rem; color:#444;'\u003e\n        \u0026copy; 2025 \u003cspan class='trademark'\u003eBert-Jan Pals \u0026trade;\u003c/span\u003e � All rights reserved.\n        \u003cdiv class='social' style='margin-top:8px; display:inline-flex; gap:12px; align-items:center;'\u003e\n            \u003ca href='https://github.com/bert-janp' target='_blank' rel='noopener noreferrer' aria-label='GitHub' title='GitHub' style='color:inherit; text-decoration:none;'\u003e\n                \u003csvg width='20' height='20' viewBox='0 0 16 16' fill='currentColor' xmlns='http://www.w3.org/2000/svg' style='vertical-align:middle;'\u003e\n                    \u003cpath fill-rule='evenodd' d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 4.6c.68.003 1.37.092 2.01.27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.001 8.001 0 0 0 16 8c0-4.42-3.58-8-8-8z'/\u003e\n                \u003c/svg\u003e\n            \u003c/a\u003e\n            \u003ca href='https://www.linkedin.com/in/bert-janpals/' target='_blank' rel='noopener noreferrer' aria-label='LinkedIn' title='LinkedIn' style='color:inherit; text-decoration:none;'\u003e\n                \u003csvg width='20' height='20' viewBox='0 0 24 24' fill='currentColor' xmlns='http://www.w3.org/2000/svg' style='vertical-align:middle;'\u003e\n                    \u003cpath d='M4.98 3.5C4.98 4.88071 3.87 6 2.5 6 1.12 6 0 4.88 0 3.5 0 2.12 1.12 1 2.5 1 3.87 1 4.98 2.12 4.98 3.5zM.24 8.98h4.52V24H.24zM8.98 8.98h4.34v2.05h.06c.6-1.14 2.06-2.34 4.24-2.34 4.54 0 5.37 2.99 5.37 6.88V24h-4.52v-7.03c0-1.68-.03-3.85-2.35-3.85-2.35 0-2.71 1.84-2.71 3.73V24H8.98z'/\u003e\n                \u003c/svg\u003e\n            \u003c/a\u003e\n            \u003ca href='https://x.com/BertJanCyber' target='_blank' rel='noopener noreferrer' aria-label='X (Twitter)' title='X (Twitter)' style='color:inherit; text-decoration:none;'\u003e\n                \u003csvg width='20' height='20' viewBox='0 0 24 24' fill='currentColor' xmlns='http://www.w3.org/2000/svg' style='vertical-align:middle;'\u003e\n                    \u003cpath d='M23.77 2.28a1 1 0 0 0-1.4-.14L13 10.34 1.63 2.12A1 1 0 0 0 .2 3.47l10.9 8.18L1.8 20.03a1 1 0 0 0 .55 1.82c.22 0 .44-.06.63-.18L13 13.66l9.1 8.01c.25.22.59.32.92.26.35-.06.66-.3.81-.63.14-.33.1-.71-.12-1.01L13.96 11.7l9.8-8.08a1 1 0 0 0 .01-1.34z'/\u003e\n                \u003c/svg\u003e\n            \u003c/a\u003e\n        \u003c/div\u003e\n    \u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e"
+                                    }
+                                },
+                                "Parse_Results_CA_Changes":  {
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@body('Execute_CA_Changes')",
+                                        "schema":  {
+                                            "type":  "object",
+                                            "properties":  {
+                                                "@@odata.context":  {
+                                                    "type":  "string"
+                                                },
+                                                "schema":  {
+                                                    "type":  "array",
+                                                    "items":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                            "name":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "type":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "name",
+                                                            "type"
+                                                        ]
+                                                    }
+                                                },
+                                                "results":  {
+                                                    "type":  "array",
+                                                    "items":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                            "TimeGenerated":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "Actor":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "OperationName":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "ImpactedPolicy":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "TimeGenerated",
+                                                            "Actor",
+                                                            "OperationName",
+                                                            "ImpactedPolicy"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "Parse_Graph_ReadWrite_Permissions":  {
+                                    "runAfter":  {
+                                        "Create_HTML_CA_Changes":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@body('Execute_Graph_ReadWrite_Permissions')",
+                                        "schema":  {
+                                            "type":  "object",
+                                            "properties":  {
+                                                "@@odata.context":  {
+                                                    "type":  "string"
+                                                },
+                                                "schema":  {
+                                                    "type":  "array",
+                                                    "items":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                            "name":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "type":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "name",
+                                                            "type"
+                                                        ]
+                                                    }
+                                                },
+                                                "results":  {
+                                                    "type":  "array"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "Create_HTML_Graph_ReadWrite_Permissions":  {
+                                    "runAfter":  {
+                                        "Parse_Graph_ReadWrite_Permissions":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Table",
+                                    "inputs":  {
+                                        "from":  "@body('Parse_Graph_ReadWrite_Permissions')?['results']",
+                                        "format":  "HTML"
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Execute_Queries":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Scope"
+                        },
+                        "Initialize_Email_Body":  {
+                            "runAfter":  {
+                                "Initialize_ClientID":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "EmailBody",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_CA_Changes_Query":  {
+                            "runAfter":  {
+                                "Initialize_Email_Body":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "CA_Changes",
+                                        "type":  "string",
+                                        "value":  "AuditLogs\n| where TimeGenerated \u003e startofweek(ago(7d))\n| where OperationName has 'conditional access policy'\n| extend ImpactedPolicy = TargetResources.[0].displayName, Actor = InitiatedBy.user.userPrincipalName\n| project TimeGenerated, Actor, OperationName, ImpactedPolicy"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Graph_ReadWrite_Permissions_Query":  {
+                            "runAfter":  {
+                                "Initialize_CA_Changes_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Graph_ReadWrite_Permissions",
+                                        "type":  "string",
+                                        "value":  "AuditLogs\n| where TimeGenerated \u003e startofweek(ago(7d))\n| where Category == \"ApplicationManagement\"\n| where ActivityDisplayName in (\"Add delegated permission grant\", \"Add app role assignment to service principal\")\n| mv-expand TargetResources\n| where TargetResources.displayName == \"Microsoft Graph\"\n| mv-expand TargetResources.modifiedProperties\n| extend InitiatedByUserPrincipalName = InitiatedBy.user.userPrincipalName\n| extend AddedPermission = replace_string(tostring(TargetResources_modifiedProperties.newValue),'\"','')\n| extend IP = todynamic(InitiatedBy).user.ipAddress\n| extend ServicePrincipalAppId = replace_string(tostring(todynamic(TargetResources).modifiedProperties[5].newValue),'\"','')\n| where AddedPermission has \"ReadWrite\"\n| project TimeGenerated, InitiatedByUserPrincipalName, ActivityDisplayName, AddedPermission, IP, ServicePrincipalAppId"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Sign_Ins_Query":  {
+                            "runAfter":  {
+                                "Initialize_Graph_ReadWrite_Permissions_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Sign_Ins",
+                                        "type":  "string",
+                                        "value":  "SigninLogs\n| where TimeGenerated \u003e startofweek(ago(30d))\n| summarize Total = count() by bin(TimeGenerated, 1d), ResultType"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Subscription":  {
+                            "runAfter":  {
+                                "Initialize_TenantId":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SubscriptionId",
+                                        "type":  "string",
+                                        "value":  "Sentinel Subscription ID"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Resource_Group":  {
+                            "runAfter":  {
+                                "Initialize_Subscription":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ResourceGroupName",
+                                        "type":  "string",
+                                        "value":  "Sentinel Resource Group Name"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Sentinel_Instance":  {
+                            "runAfter":  {
+                                "Initialize_Resource_Group":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "SentinelResourceName",
+                                        "type":  "string",
+                                        "value":  "Sentinel Instance Name"
+                                    }
+                                ]
+                            }
+                        },
+                        "Execute_Queries":  {
+                            "actions":  {
+                                "Execute_CA_Changes":  {
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "uri":  "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                                        "method":  "POST",
+                                        "headers":  {
+                                            "Authorization":  "@{body('Parse_Graph_Tokens')?['access_token']}"
+                                        },
+                                        "body":  {
+                                            "Query":  "@{variables('CA_Changes')}"
+                                        }
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "contentTransfer":  {
+                                            "transferMode":  "Chunked"
+                                        }
+                                    }
+                                },
+                                "Execute_Graph_ReadWrite_Permissions":  {
+                                    "runAfter":  {
+                                        "Execute_CA_Changes":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "uri":  "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                                        "method":  "POST",
+                                        "headers":  {
+                                            "Authorization":  "@{body('Parse_Graph_Tokens')?['access_token']}"
+                                        },
+                                        "body":  {
+                                            "Query":  "@{variables('Graph_ReadWrite_Permissions')}"
+                                        }
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "contentTransfer":  {
+                                            "transferMode":  "Chunked"
+                                        }
+                                    }
+                                },
+                                "Run_query_and_visualize_results":  {
+                                    "runAfter":  {
+                                        "Execute_Graph_ReadWrite_Permissions":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['azuremonitorlogs']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  "@variables('Sign_Ins')",
+                                        "path":  "/visualizeQuery",
+                                        "queries":  {
+                                            "subscriptions":  "@variables('SubscriptionId')",
+                                            "resourcegroups":  "@variables('ResourceGroupName')",
+                                            "resourcetype":  "Log Analytics Workspace",
+                                            "resourcename":  "@variables('SentinelResourceName')",
+                                            "timerange":  "Set in query",
+                                            "visType":  "Bar Chart"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Get_Graph_Tokens":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Scope"
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "Keyvault":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('KeyvaultConnectionName'))]",
+                                "connectionName":  "[variables('KeyvaultConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Keyvault')]",
+                                "connectionProperties":  {
+                                    "authentication":  {
+                                        "type":  "ManagedServiceIdentity"
+                                    }
+                                }
+                            },
+                            "office365":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName":  "[variables('Office365ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                            },
+                            "azuremonitorlogs":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('AzuremonitorlogsConnectionName'))]",
+                                "connectionName":  "[variables('AzuremonitorlogsConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs')]"
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "Report-EntraAdmin",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('KeyvaultConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                "[resourceId('Microsoft.Web/connections', variables('AzuremonitorlogsConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('KeyvaultConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('KeyvaultConnectionName')]",
+                "customParameterValues":  {
+                },
+                "parameterValueType":  "Alternative",
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Keyvault')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Office365ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Office365ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                }
+            }
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('AzuremonitorlogsConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('AzuremonitorlogsConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuremonitorlogs')]"
+                }
+            }
+        }
+    ]
+}
