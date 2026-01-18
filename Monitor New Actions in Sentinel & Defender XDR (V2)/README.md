@@ -31,6 +31,7 @@ The variables in the logic app should be adjusted to get it configured for your 
 - RecipientAddress sets one or more recipients of the report.
 - TenantId should be set to your tenantId.
 - ClientID is the id of the Application that connects to the Graph API.
+- Set the KeyVault to an exsisting one.
 
 # Deploy Managed Idenity Authentication
 Recommended solution.
