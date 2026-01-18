@@ -34,11 +34,16 @@ The variables in the logic app should be adjusted to get it configured for your 
 
 # Deploy Managed Idenity Authentication
 Recommended solution.
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Frefs%2Fheads%2Fmain%2FCISA-KEV-Weekly-Report%2Fazuredeploy.json)
 
-[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Frefs%2Fheads%2Fmain%2FCISA-KEV-Weekly-Report%2Fazuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Frefs%2Fheads%2Fmain%2FMonitor%2520New%2520Actions%2520in%2520Sentinel%2520%2526%2520Defender%2520XDR%2520(V2)%2Fazuredeploy_mi.json)
+
+[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Frefs%2Fheads%2Fmain%2FMonitor%2520New%2520Actions%2520in%2520Sentinel%2520%2526%2520Defender%2520XDR%2520(V2)%2Fazuredeploy_mi.json)
 
 # Deploy Application Authentication
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Frefs%2Fheads%2Fmain%2FMonitor%2520New%2520Actions%2520in%2520Sentinel%2520%2526%2520Defender%2520XDR%2520(V2)%2Fazuredeploy_appsecret.json)
+
+[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBert-JanP%2FSentinel-Automation%2Frefs%2Fheads%2Fmain%2FMonitor%2520New%2520Actions%2520in%2520Sentinel%2520%2526%2520Defender%2520XDR%2520(V2)%2Fazuredeploy_appsecret.json)
 
 # Version
 | Version | Description | Date |
