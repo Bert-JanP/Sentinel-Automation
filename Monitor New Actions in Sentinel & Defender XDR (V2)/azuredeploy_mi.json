@@ -1,0 +1,326 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "Monitor New Actions in Sentinel & Defender XDR (V2)",
+        "description":  "Monitor New Actions in Sentinel & Defender XDR (V2)",
+        "prerequisites":  "",
+        "postDeployment":  [
+        ],
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  "Bert-Jan Pals"
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "Report-NewTableActionFound-MI",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "Office365ConnectionName":  "[concat('Office365-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "Recurrence":  {
+                            "recurrence":  {
+                                "frequency":  "Week",
+                                "interval":  1,
+                                "schedule":  {
+                                    "hours":  [
+                                        "10"
+                                    ],
+                                    "minutes":  [
+                                        45
+                                    ],
+                                    "weekDays":  [
+                                        "Monday"
+                                    ]
+                                },
+                                "timeZone":  "W. Europe Standard Time"
+                            },
+                            "evaluatedRecurrence":  {
+                                "frequency":  "Week",
+                                "interval":  1,
+                                "schedule":  {
+                                    "hours":  [
+                                        "10"
+                                    ],
+                                    "minutes":  [
+                                        45
+                                    ],
+                                    "weekDays":  [
+                                        "Monday"
+                                    ]
+                                },
+                                "timeZone":  "W. Europe Standard Time"
+                            },
+                            "type":  "Recurrence"
+                        }
+                    },
+                    "actions":  {
+                        "Execute_Graph_Query":  {
+                            "actions":  {
+                                "Execute_Query":  {
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "uri":  "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                                        "method":  "POST",
+                                        "headers":  {
+                                            "Authorization":  ""
+                                        },
+                                        "body":  {
+                                            "Query":  "@{variables('Query')}",
+                                            "Timespan":  "@{addDays(utcNow(), -180)}"
+                                        },
+                                        "authentication":  {
+                                            "type":  "ManagedServiceIdentity",
+                                            "audience":  "https://graph.microsoft.com"
+                                        }
+                                    },
+                                    "runtimeConfiguration":  {
+                                        "contentTransfer":  {
+                                            "transferMode":  "Chunked"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Initialize_Email_Body":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Scope"
+                        },
+                        "Initialize_RecipientAddress_":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "RecipientAddress",
+                                        "type":  "string",
+                                        "value":  "test@test.com"
+                                    }
+                                ]
+                            }
+                        },
+                        "Initialize_Query":  {
+                            "runAfter":  {
+                                "Initialize_RecipientAddress_":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "Query",
+                                        "type":  "string",
+                                        "value":  "let TimeFrame = 180d;\nlet Schedule = 7d;\nlet KnownActions = materialize (union *\n| where TimeGenerated between (startofday(ago(TimeFrame)) .. endofday(ago(Schedule))) \n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType, tostring(EventID))\n| where isnotempty(Action)\n| distinct Action);\nunion *\n| where TimeGenerated \u003e endofday(ago(Schedule)) \n| extend Action = coalesce(Operation, OperationName, OperationNameValue, ActionType, tostring(EventID))\n| where isnotempty(Action) and Action !in (KnownActions)\n| summarize TotalEntries = count() by Action, Type\n| project-rename Table = Type\n| sort by Table asc, Action\n| project Table, Action, TotalEntries = tostring(TotalEntries)"
+                                    }
+                                ]
+                            }
+                        },
+                        "Return_Results":  {
+                            "actions":  {
+                                "Graph_API_to_HTML_Table":  {
+                                    "runAfter":  {
+                                        "Parse_Results":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Table",
+                                    "inputs":  {
+                                        "from":  "@body('Parse_Results')?['results']",
+                                        "format":  "HTML"
+                                    }
+                                },
+                                "Send_Results":  {
+                                    "runAfter":  {
+                                        "Create_Email_HTML":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['office365']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "body":  {
+                                            "To":  "@variables('RecipientAddress')",
+                                            "Subject":  "Weekly New Action Types",
+                                            "Body":  "\u003cp class=\"editor-paragraph\"\u003e@{variables('EmailBody')}\u003c/p\u003e",
+                                            "Importance":  "Normal"
+                                        },
+                                        "path":  "/v2/Mail"
+                                    }
+                                },
+                                "Create_Email_HTML":  {
+                                    "runAfter":  {
+                                        "Graph_API_to_HTML_Table":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "SetVariable",
+                                    "inputs":  {
+                                        "name":  "EmailBody",
+                                        "value":  "\u003c!DOCTYPE html\u003e\n\u003chtml\u003e\n\u003chead\u003e\n  \u003cmeta charset=\"UTF-8\"\u003e\n  \u003ctitle\u003eWeekly Action Types Update\u003c/title\u003e\n  \u003cstyle\u003e\n    body {\n      font-family: Arial, sans-serif;\n      background-color: #f0f8ff;\n      margin: 0;\n      padding: 0;\n    }\n    .container {\n      max-width: 90%;\n      margin: auto;\n      background-color: #ffffff;\n      border: 1px solid #cce;\n      padding: 20px;\n      box-sizing: border-box;\n    }\n    h2 {\n      color: #0055a5;\n      text-align: center;\n    }\n    .info {\n      margin-bottom: 20px;\n      color: #333;\n    }\n    .table-container {\n      overflow-x: auto;\n    }\n    table {\n      width: 100%;\n      border-collapse: collapse;\n      margin-bottom: 20px;\n      min-width: 400px;\n    }\n    th {\n      background-color: #0055a5;\n      color: white;\n      padding: 10px;\n      text-align: left;\n    }\n    td {\n      border: 1px solid #ddd;\n      padding: 8px;\n    }\n    .footer {\n      text-align: center;\n      font-size: 12px;\n      color: #777;\n      margin-top: 10px;\n    }\n    .copyright {\n      text-align: center;\n      font-size: 12px;\n      color: #999;\n      margin-top: 5px;\n    }\n\n    @media screen and (max-width: 600px) {\n      .container {\n        padding: 10px;\n      }\n      th, td {\n        font-size: 14px;\n        padding: 6px;\n      }\n    }\n  \u003c/style\u003e\n\u003c/head\u003e\n\u003cbody\u003e\n  \u003cdiv class=\"container\"\u003e\n    \u003ch2\u003eNew Action Types This Week\u003c/h2\u003e\n    \u003cp class=\"info\"\u003eHere's a summary of new action types added to Unified XDR (Defender XDR and Sentinel) this week.\u003c/p\u003e\n    \n    \u003cdiv class=\"table-container\"\u003e\n      @{body('Graph_API_to_HTML_Table')}\n    \u003c/div\u003e\n\n    \u003cdiv class=\"footer\"\u003e\n      Powered by Logic Apps, KQL and Graph API.\n    \u003c/div\u003e\n    \u003cdiv class=\"copyright\"\u003e\n      \u0026copy; Bert-Jan Pals.\n    \u003c/div\u003e\n  \u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n"
+                                    }
+                                },
+                                "Parse_Results":  {
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@body('Execute_Query')",
+                                        "schema":  {
+                                            "type":  "object",
+                                            "properties":  {
+                                                "@@odata.context":  {
+                                                    "type":  "string"
+                                                },
+                                                "schema":  {
+                                                    "type":  "array",
+                                                    "items":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                            "name":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "type":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "name",
+                                                            "type"
+                                                        ]
+                                                    }
+                                                },
+                                                "results":  {
+                                                    "type":  "array",
+                                                    "items":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                            "Table":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "Action":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "TotalEntries":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "Table",
+                                                            "Action",
+                                                            "TotalEntries"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Execute_Graph_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Scope"
+                        },
+                        "Initialize_Email_Body":  {
+                            "runAfter":  {
+                                "Initialize_Query":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "EmailBody",
+                                        "type":  "string"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "office365":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]",
+                                "connectionName":  "[variables('Office365ConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]",
+                                "connectionProperties":  {
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "Report-NewTableActionFound-MI",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('Office365ConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('Office365ConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('Office365ConnectionName')]",
+                "customParameterValues":  {
+                },
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Office365')]"
+                }
+            }
+        }
+    ]
+}
